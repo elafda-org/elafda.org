@@ -15,7 +15,7 @@ and the standalone mark.
 | `logo/wordmark-mono.svg` | Single-color contexts (inherits `currentColor`) |
 | `logo/mark.svg` | Square "eL." tile — avatars, app icons |
 | `logo/mark-light.svg` | Square tile on paper with ink border |
-| `logo/favicon.svg` | "e." — small sizes (≤48px) where "eL." stops reading |
+| `logo/favicon.svg` | Round "e." disc — small sizes (≤48px) where "eL." stops reading |
 
 All text is outlined to paths (Georgia Bold, −0.06em tracking), so the SVGs render
 identically everywhere — no font dependency.
