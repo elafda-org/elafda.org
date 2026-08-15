@@ -1,0 +1,11 @@
+{
+  "name": "elafda",
+  "private": true,
+  "license": "AGPL-3.0-or-later",
+  "scripts": {
+    "dev": "npm --prefix apps/web run dev",
+    "build": "npm --prefix apps/web run build",
+    "test": "npm --prefix apps/web test",
+    "lint": "npm --prefix apps/web run lint"
+  }
+}
