@@ -303,7 +303,7 @@ export default function Home() {
         </div>
         <div className="closing-copy">
           <p>eLafda is open source and in active development. The first archive will focus on Indian Tech Twitter while the review and moderation systems take shape.</p>
-          <a className="button button-lime" href="https://github.com/elafda" rel="noreferrer">Follow the build <span aria-hidden="true">↗</span></a>
+          <a className="button button-lime" href="https://github.com/elafda-org/elafda.org" rel="noreferrer">Follow the build <span aria-hidden="true">↗</span></a>
         </div>
       </section>
 
@@ -314,7 +314,7 @@ export default function Home() {
           <a href="#archive">Cases</a>
           <a href="#how-it-works">How it works</a>
           <a href="#principles">Principles</a>
-          <a href="https://github.com/elafda" rel="noreferrer">GitHub ↗</a>
+          <a href="https://github.com/elafda-org/elafda.org" rel="noreferrer">GitHub ↗</a>
         </div>
         <p className="copyright">© 2026 eLafda · Early preview</p>
       </footer>

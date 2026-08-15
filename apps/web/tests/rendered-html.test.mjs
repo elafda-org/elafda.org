@@ -60,6 +60,8 @@ test("ships the finished product surface and social image", async () => {
   assert.match(page, /aria-live="polite"/);
   assert.match(page, /aria-pressed=\{topic === item\}/);
   assert.match(page, /className="skip-link"/);
+  assert.match(page, /https:\/\/github\.com\/elafda-org\/elafda\.org/);
+  assert.doesNotMatch(page, /https:\/\/github\.com\/elafda["/]/);
   assert.match(layout, /metadataBase/);
   assert.match(layout, /summary_large_image/);
   assert.match(styles, /prefers-reduced-motion:\s*reduce/);
