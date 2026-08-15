@@ -15,7 +15,7 @@ All application commands run from `apps/web`:
 ```bash
 npm ci                 # install (Node >= 22.13)
 npm run dev            # vinext dev server (Cloudflare Workers runtime via Miniflare)
-npm run build          # production build — the required pre-handoff check
+npm run build          # production build; the required pre-handoff check
 npm run lint           # eslint (typescript-eslint, react, react-hooks, jsx-a11y, next core-web-vitals)
 npm test               # runs build, then node --test tests/rendered-html.test.mjs
 ```
@@ -49,12 +49,12 @@ Two layers matter more than the file tree:
 
 `apps/web` is the OpenAI Sites **vinext** starter (not stock Next.js), targeting the Cloudflare Workers runtime:
 
-- `worker/index.ts` — Worker entry. Delegates to `vinext/server/app-router-entry`, intercepting `/_vinext/image` for image optimization via the `IMAGES` binding.
-- `vite.config.ts` — composes `vinext()`, the local `sites()` plugin, and `@cloudflare/vite-plugin`. Bindings (`d1`, `r2`) are read from `.openai/hosting.json`; both are currently `null`, so no bindings are simulated locally.
-- `build/sites-vite-plugin.ts` — post-build step that packages Sites hosting metadata with the deployable output.
-- `app/page.tsx` — the entire site. A single `"use client"` component holding the homepage plus a hardcoded `cases` array driving `useMemo`-based text search and topic filtering.
-- `app/layout.tsx` — `<html lang="en">` shell, `./globals.css` import, and the `Metadata` export (title, description, Open Graph, `summary_large_image` Twitter card, `metadataBase` from `APP_URL`).
-- `app/globals.css` — hand-written design system (~230 lines) on top of `@import "tailwindcss"`. Defines every class `page.tsx` uses, plus `focus-visible`, `prefers-reduced-motion`, and a `max-width: 760px` breakpoint. Tailwind utilities are available but the page does not use them; edit this file rather than adding utility soup.
+- `worker/index.ts`: Worker entry. Delegates to `vinext/server/app-router-entry`, intercepting `/_vinext/image` for image optimization via the `IMAGES` binding.
+- `vite.config.ts`: composes `vinext()`, the local `sites()` plugin, and `@cloudflare/vite-plugin`. Bindings (`d1`, `r2`) are read from `.openai/hosting.json`; both are currently `null`, so no bindings are simulated locally.
+- `build/sites-vite-plugin.ts`: post-build step that packages Sites hosting metadata with the deployable output.
+- `app/page.tsx`: the entire site. A single `"use client"` component holding the homepage plus a hardcoded `cases` array driving `useMemo`-based text search and topic filtering.
+- `app/layout.tsx`: `<html lang="en">` shell, `./globals.css` import, and the `Metadata` export (title, description, Open Graph, `summary_large_image` Twitter card, `metadataBase` from `APP_URL`).
+- `app/globals.css`: hand-written design system (~230 lines) on top of `@import "tailwindcss"`. Defines every class `page.tsx` uses, plus `focus-visible`, `prefers-reduced-motion`, and a `max-width: 760px` breakpoint. Tailwind utilities are available but the page does not use them; edit this file rather than adding utility soup.
 
 Because this is the Workers runtime, there is no Node server: server code runs in Worker scope.
 
@@ -62,8 +62,8 @@ Because this is the Workers runtime, there is no Node server: server code runs i
 
 The completed `build-base-website` change is archived under `openspec/changes/archive/2026-08-15-build-base-website/`. Its two accepted capability specs are the acceptance criteria for the current page:
 
-- `public-homepage` — identity/promise above the fold, the discussion-vs-record distinction, trust framing, keyboard/contrast/reduced-motion/responsive behavior, and an explicit *preview* state cue.
-- `case-discovery-preview` — representative case cards with status/source/verification metadata, local search with an empty state, topic filters with programmatic active state, and a live region announcing result counts.
+- `public-homepage`: identity/promise above the fold, the discussion-vs-record distinction, trust framing, keyboard/contrast/reduced-motion/responsive behavior, and an explicit *preview* state cue.
+- `case-discovery-preview`: representative case cards with status/source/verification metadata, local search with an empty state, topic filters with programmatic active state, and a live region announcing result counts.
 
 All archived tasks are complete. New behavior requires a new scoped OpenSpec change.
 
@@ -71,7 +71,7 @@ All archived tasks are complete. New behavior requires a new scoped OpenSpec cha
 
 `tests/rendered-html.test.mjs` is a two-test `node:test` suite and is the de-facto regression guard for the active change. It boots the built worker and asserts rendered output (title, hero copy, preview-state cue, `og.png`) plus source-level invariants (`aria-live`, `aria-pressed`, `skip-link`, `metadataBase`, reduced-motion and focus-visible CSS, and that no vinext-starter residue remains). Build, lint, and both tests currently pass.
 
-Extend this suite when you add behavior — it is what keeps the `public-homepage` and `case-discovery-preview` scenarios honest without a browser harness.
+Extend this suite when you add behavior; it is what keeps the `public-homepage` and `case-discovery-preview` scenarios honest without a browser harness.
 
 ### Known implementation constraints
 

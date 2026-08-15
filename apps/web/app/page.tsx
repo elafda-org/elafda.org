@@ -127,7 +127,7 @@ export default function Home() {
             <em>Receipts shouldn’t.</em>
           </h1>
           <p className="hero-deck">
-            Follow the conversation, inspect the evidence, and preserve what actually happened—without confusing popularity for truth.
+            Follow the conversation, inspect the evidence, and preserve what actually happened without confusing popularity for truth.
           </p>
           <div className="hero-actions">
             <a className="button button-dark" href="#archive">
@@ -159,7 +159,7 @@ export default function Home() {
             <span className="stamp-mark">✓</span>
             <div><strong>SOURCE REVIEWED</strong><small>2 primary · 3 secondary</small></div>
           </div>
-          <p className="file-note">Representative interface content—not a published allegation.</p>
+          <p className="file-note">Representative interface content, not a published allegation.</p>
         </aside>
       </section>
 
@@ -250,7 +250,7 @@ export default function Home() {
           <ul>
             <li><span>↗</span> Opinions and analysis</li>
             <li><span>↗</span> Questions and firsthand accounts</li>
-            <li><span>↗</span> Votes shape discovery—not truth</li>
+            <li><span>↗</span> Votes shape discovery, not truth</li>
           </ul>
           <p className="layer-rule">OPEN WITHIN POLICY</p>
         </div>
@@ -275,7 +275,7 @@ export default function Home() {
           </div>
         </div>
         <ol className="process-list">
-          <li><span>01</span><div><h3>Nominate</h3><p>Share a thread, source, or missing update through the web—or eventually tag the bot.</p></div></li>
+          <li><span>01</span><div><h3>Nominate</h3><p>Share a thread, source, or missing update through the web, or eventually tag the bot.</p></div></li>
           <li><span>02</span><div><h3>Source</h3><p>Separate fact, allegation, opinion, and satire. Attach lawful primary evidence.</p></div></li>
           <li><span>03</span><div><h3>Review</h3><p>Contributors check duplicates; archivists review wording, relevance, and support.</p></div></li>
           <li><span>04</span><div><h3>Preserve</h3><p>Accepted events join a versioned timeline with attribution and a public change trail.</p></div></li>
@@ -286,7 +286,7 @@ export default function Home() {
         <div className="principles-title">
           <p className="eyebrow"><span>05</span> Receipts, responsibly</p>
           <h2 id="principles-title">Built for memory.<br /><em>Designed for restraint.</em></h2>
-          <p>Archiving controversy carries real risk. Safety isn’t footer copy—it is part of the product model.</p>
+          <p>Archiving controversy carries real risk. Safety isn’t footer copy; it is part of the product model.</p>
         </div>
         <div className="principle-list">
           <article><span>ATTRIBUTION</span><h3>Allegations stay allegations.</h3><p>We say who alleged what and never turn an investigation, complaint, or arrest into a declaration of guilt.</p></article>

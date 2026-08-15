@@ -29,7 +29,7 @@ test("server-renders the eLafda archive preview", async () => {
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
 
   const html = await response.text();
-  assert.match(html, /<title>eLafda — The open-source home of internet lafda<\/title>/i);
+  assert.match(html, /<title>eLafda: The open-source home of internet lafda<\/title>/i);
   assert.match(html, /Internet forgets\./);
   assert.match(html, /Receipts shouldn’t\./);
   assert.match(html, /One controversy, two layers/i);
