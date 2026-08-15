@@ -5,6 +5,10 @@
   "scripts": {
     "dev": "npm --prefix apps/web run dev",
     "build": "npm --prefix apps/web run build",
+    "build:production": "npm --prefix apps/web run build:production",
+    "preview": "npm --prefix apps/web run preview",
+    "deploy:preview": "npm --prefix apps/web run deploy:preview",
+    "deploy:production": "npm --prefix apps/web run deploy:production",
     "test": "npm --prefix apps/web test",
     "lint": "npm --prefix apps/web run lint"
   }

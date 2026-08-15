@@ -2,13 +2,13 @@ import assert from "node:assert/strict";
 import { access, readFile } from "node:fs/promises";
 import test from "node:test";
 
-async function render() {
+async function fetchWorker(url = "https://elafda.org/") {
   const workerUrl = new URL("../dist/server/index.js", import.meta.url);
   workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}`);
   const { default: worker } = await import(workerUrl.href);
 
   return worker.fetch(
-    new Request("https://elafda.org/", {
+    new Request(url, {
       headers: { accept: "text/html" },
     }),
     {
@@ -24,7 +24,7 @@ async function render() {
 }
 
 test("server-renders the eLafda archive preview", async () => {
-  const response = await render();
+  const response = await fetchWorker();
   assert.equal(response.status, 200);
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
 
@@ -37,6 +37,16 @@ test("server-renders the eLafda archive preview", async () => {
   assert.match(html, /Search preview cases/);
   assert.match(html, /og\.png/);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape|react-loading-skeleton/i);
+});
+
+test("redirects the www hostname to the canonical apex URL", async () => {
+  const response = await fetchWorker("https://www.elafda.org/cases?topic=tech");
+
+  assert.equal(response.status, 308);
+  assert.equal(
+    response.headers.get("location"),
+    "https://elafda.org/cases?topic=tech",
+  );
 });
 
 test("ships the finished product surface and social image", async () => {
@@ -61,5 +71,7 @@ test("ships the finished product surface and social image", async () => {
   await access(new URL("../public/og.png", import.meta.url));
   await access(new URL("../dist/server/index.js", import.meta.url));
   await access(new URL("../dist/client/og.png", import.meta.url));
-  await access(new URL("../.openai/hosting.json", import.meta.url));
+  await access(new URL("../wrangler.jsonc", import.meta.url));
+  await assert.rejects(access(new URL("../.openai/hosting.json", import.meta.url)));
+  await assert.rejects(access(new URL("../build/sites-vite-plugin.ts", import.meta.url)));
 });

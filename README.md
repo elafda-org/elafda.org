@@ -38,22 +38,48 @@ Requirements:
 - npm
 - OpenSpec CLI for specification workflow changes
 
-Run the web application:
+Install dependencies from the application directory:
 
 ```bash
 cd apps/web
 npm ci
-npm run dev
 ```
 
-Create a production build:
+Then run the common web commands directly from the project root:
 
 ```bash
-cd apps/web
+npm run dev
 npm run build
+npm test
+npm run lint
 ```
 
 Additional scripts are listed in [`apps/web/package.json`](./apps/web/package.json).
+
+## Cloudflare deployment
+
+The server-rendered web application deploys to Cloudflare Workers. `elafda.org` and `www.elafda.org` are production custom domains; requests to `www` are permanently redirected to the apex domain.
+
+Authenticate once for local deployments:
+
+```bash
+cd apps/web
+npx wrangler login
+```
+
+Return to the project root and deploy the safe `workers.dev` preview first:
+
+```bash
+npm run deploy:preview
+```
+
+After smoke-testing that URL and checking the existing Cloudflare DNS records, attach the production custom domains explicitly:
+
+```bash
+npm run deploy:production
+```
+
+CI should provide `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` as protected secrets. Never add either value to `wrangler.jsonc`, environment files committed to Git, or build logs. If a production smoke check fails, restore the last known-good Worker version or the prior DNS target before retiring it.
 
 ## OpenSpec workflow
 

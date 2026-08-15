@@ -24,6 +24,6 @@ coverage/
 .idea/
 .vscode/
 
-# Local Sites work directories
+# Local hosting work directories
 outputs/
 work/

@@ -558,7 +558,7 @@ Use `pnpm` workspaces and Turborepo. The bot stays in the monorepo until indepen
 | Component                 | Production target                                                     |
 | ------------------------- | --------------------------------------------------------------------- |
 | DNS and edge controls     | Cloudflare                                                            |
-| Next.js web and API       | Vercel                                                                |
+| vinext web and API        | Cloudflare Workers                                                    |
 | PostgreSQL                | Neon pooled PostgreSQL                                                |
 | Redis and queues          | Managed Redis-compatible provider                                     |
 | Bot and background worker | Railway, Render, Fly.io or equivalent long-running container platform |
@@ -566,7 +566,7 @@ Use `pnpm` workspaces and Turborepo. The bot stays in the monorepo until indepen
 | Email                     | Transactional email provider through an adapter                       |
 | Monitoring                | OpenTelemetry collector plus hosted errors, logs and uptime checks    |
 
-Vercel functions suit request-driven web workloads and scheduled maintenance. A continuously running worker is preferred for queue consumption, bot retries and reconciliation. Neon pooled connections should be used for serverless concurrency. R2 is accessed through an S3-compatible adapter so self-hosters can substitute MinIO or S3.
+Cloudflare Workers host the server-rendered web application and request-driven API workloads behind Cloudflare DNS. A separate continuously running worker remains preferred for queue consumption, bot retries and reconciliation. Neon pooled or HTTP connections should be used for edge concurrency. R2 is accessed through an S3-compatible adapter so self-hosters can substitute MinIO or S3.
 
 ### Environments
 
@@ -787,7 +787,7 @@ Stored XSS, SSRF through evidence URLs, malicious uploads, IDOR, vote manipulati
 - Display net scores while hiding raw voter identities.
 - Use a founder-appointed interim moderation group with decisions and tenure published.
 - Keep canonical data in PostgreSQL and mirror accepted case records to GitHub daily.
-- Run the web tier on Vercel, PostgreSQL on Neon, media on private R2 and the worker on a container host.
+- Run the web tier on Cloudflare Workers behind Cloudflare DNS, PostgreSQL on Neon, media on private R2 and the background worker on a container host.
 - Treat the X bot as a nomination interface, never an autonomous publisher.
 - Use X as the sole member sign-in provider; keep member OAuth credentials separate from bot credentials.
 
@@ -803,7 +803,7 @@ Stored XSS, SSRF through evidence URLs, malicious uploads, IDOR, vote manipulati
 
 ## 29. Reference deployment documentation
 
-- Vercel Next.js deployment and functions: <https://vercel.com/docs/frameworks/full-stack/nextjs>
-- Vercel cron jobs: <https://vercel.com/docs/cron-jobs>
+- Cloudflare Workers framework deployment: <https://developers.cloudflare.com/workers/framework-guides/>
+- Cloudflare Workers custom domains: <https://developers.cloudflare.com/workers/configuration/routing/custom-domains/>
 - Neon connection pooling: <https://neon.com/docs/connect/connection-pooling>
 - Cloudflare R2 S3 compatibility: <https://developers.cloudflare.com/r2/api/s3/api/>
