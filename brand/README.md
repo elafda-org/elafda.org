@@ -69,8 +69,10 @@ Ready-to-paste bios, profile fields, and boilerplate live in `copy.md`.
 Regeneration script: text is outlined from `Georgia_Bold.ttf` via fontTools, composed
 to SVG, rasterized with sharp. See git history of this directory for the pipeline.
 
-## Wiring into the app (not done here)
+## Wiring into the app
 
-Replacing `apps/web/public/og.png` (currently a 2.4MB screenshot) with
-`web/og-1200x630.png` and adding the favicons to `apps/web/public/` + `metadata.icons`
-in `app/layout.tsx` touches the shipped site — scope it as a small OpenSpec change.
+Shipped via the `wire-brand-web-assets` OpenSpec change: `apps/web/public/og.png` is
+`web/og-1200x630.png`, and `favicon.svg` (from `logo/`), `favicon-16.png`,
+`favicon-32.png`, and `apple-touch-icon-180.png` live in `apps/web/public/` and are
+declared through `metadata.icons` in `app/layout.tsx`. If these assets are
+regenerated, re-copy them into `apps/web/public/`.
