@@ -39,9 +39,9 @@ This ensures a first deployment can be smoke-tested without touching production 
 
 Both hostnames will be configured as Worker custom domains. The Worker entry will return a permanent redirect from `www.elafda.org` to the same path and query on `https://elafda.org`. Handling this at the Worker avoids a separate redirect service and keeps canonical URL behavior versioned with the application.
 
-### Keep deployments manually invoked until CI credentials exist
+### Verify pull requests and deploy merged changes through GitHub Actions
 
-The repository will expose deterministic deployment commands. Local use authenticates with `wrangler login`; CI will use `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. Automated deployment is not enabled until those repository secrets and branch protections are configured.
+The repository exposes deterministic deployment commands. Local use authenticates with `wrangler login`; CI uses `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. Pull requests run lint and build-backed tests without credentials or deployment. Pushes to `main`, including merged pull requests, deploy the production environment only after verification succeeds. Manual production dispatch is restricted to the `main` ref. The deployment job remains unavailable until the repository or protected production environment holds both Cloudflare secrets.
 
 ## Risks / Trade-offs
 
@@ -68,4 +68,4 @@ Rollback consists of deploying the last known-good Worker version or restoring t
 
 - Which Cloudflare account will own the production Worker after local login?
 - Are there existing apex or `www` records that must be replaced before custom-domain attachment?
-- When should repository secrets and protected-branch deployment automation be enabled?
+- Who will create the restricted Cloudflare API token and add both required GitHub Actions secrets?

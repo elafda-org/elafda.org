@@ -19,5 +19,6 @@
 
 ## 4. Follow-up Operations
 
-- [ ] 4.1 Configure restricted CI credentials and reviewed production deployment automation
-- [ ] 4.2 Retire the previous private Sites preview only after production verification
+- [x] 4.1 Add pull-request verification and merge-to-main production deployment automation
+- [ ] 4.2 Configure the restricted `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` GitHub Actions secrets
+- [ ] 4.3 Retire the previous private Sites preview only after production verification

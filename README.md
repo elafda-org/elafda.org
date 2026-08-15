@@ -81,6 +81,8 @@ npm run deploy:production
 
 CI should provide `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` as protected secrets. Never add either value to `wrangler.jsonc`, environment files committed to Git, or build logs. If a production smoke check fails, restore the last known-good Worker version or the prior DNS target before retiring it.
 
+The `Verify and deploy` GitHub Actions workflow runs lint and tests for pull requests. A push to `main`, including a merged pull request, deploys production only after verification passes. Manual workflow runs deploy only when started from `main`. Add both Cloudflare values under repository or `production` environment Actions secrets before merging the workflow; they are not currently configured.
+
 ## OpenSpec workflow
 
 All material product changes begin as an OpenSpec change. `SPEC.md` defines the product vision; OpenSpec turns a scoped increment into testable requirements and implementation tasks.
