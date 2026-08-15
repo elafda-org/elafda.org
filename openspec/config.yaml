@@ -1,0 +1,39 @@
+schema: spec-driven
+
+context: |
+  Product: eLafda, an open-source community-governed archive for Indian internet controversies.
+  Product source of truth: SPEC.md.
+  Initial delivery focus: a public, read-only base website that makes cases discoverable and clearly separates community discussion from verified canonical records.
+  Preferred stack: TypeScript and React. The current hosted website uses the OpenAI Sites vinext starter and Cloudflare Worker-compatible output.
+  Product principles: neutral wording, visible source status, accessibility, responsive design, privacy, and no presentation of popularity as factual truth.
+  Authentication direction: X is the sole member sign-in provider; member OAuth and bot credentials must remain separate.
+  Language: English first, with architecture ready for Indian-language localization.
+
+rules:
+  proposal:
+    - Keep each proposal scoped to one coherent product increment.
+    - Explicitly connect the change to SPEC.md.
+  specs:
+    - Write testable requirements with concrete scenarios.
+    - Include accessibility and responsive behavior when relevant.
+  tasks:
+    - Include build and validation work.
+
+# Project context (optional)
+# This is shown to AI when creating artifacts.
+# Add your tech stack, conventions, style guides, domain knowledge, etc.
+# Example:
+#   context: |
+#     Tech stack: TypeScript, React, Node.js
+#     We use conventional commits
+#     Domain: e-commerce platform
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+# Example:
+#   rules:
+#     proposal:
+#       - Keep proposals under 500 words
+#       - Always include a "Non-goals" section
+#     tasks:
+#       - Break tasks into chunks of max 2 hours

@@ -1,0 +1,29 @@
+# Dependencies and package-manager state
+node_modules/
+.pnp
+.pnp.*
+
+# Application build and local runtime output
+.next/
+.vinext/
+.wrangler/
+.turbo/
+dist/
+out/
+coverage/
+
+# Local environment and credentials
+.env
+.env.*
+!.env.example
+*.pem
+
+# Logs and editor/OS state
+*.log
+.DS_Store
+.idea/
+.vscode/
+
+# Local hosting work directories
+outputs/
+work/
