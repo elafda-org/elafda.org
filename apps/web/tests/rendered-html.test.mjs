@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { access, readFile } from "node:fs/promises";
+import { access, readFile, stat } from "node:fs/promises";
 import test from "node:test";
 
 async function fetchWorker(url = "https://elafda.org/") {
@@ -36,6 +36,10 @@ test("server-renders the eLafda archive preview", async () => {
   assert.match(html, /EARLY ARCHIVE PREVIEW/);
   assert.match(html, /Search preview cases/);
   assert.match(html, /og\.png/);
+  assert.match(html, /<link rel="icon" href="\/favicon\.svg"[^>]*type="image\/svg\+xml"/);
+  assert.match(html, /<link rel="icon" href="\/favicon-32\.png"[^>]*sizes="32x32"/);
+  assert.match(html, /<link rel="icon" href="\/favicon-16\.png"[^>]*sizes="16x16"/);
+  assert.match(html, /<link rel="apple-touch-icon" href="\/apple-touch-icon-180\.png"/);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape|react-loading-skeleton/i);
 });
 
@@ -70,9 +74,22 @@ test("ships the finished product surface and social image", async () => {
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
 
   await assert.rejects(access(new URL("../app/_sites-preview", import.meta.url)));
-  await access(new URL("../public/og.png", import.meta.url));
+  const ogStats = await stat(new URL("../public/og.png", import.meta.url));
+  assert.ok(
+    ogStats.size < 200_000,
+    `og.png should be the brand card (<200KB), got ${ogStats.size} bytes`,
+  );
   await access(new URL("../dist/server/index.js", import.meta.url));
   await access(new URL("../dist/client/og.png", import.meta.url));
+  for (const icon of [
+    "favicon.svg",
+    "favicon-16.png",
+    "favicon-32.png",
+    "apple-touch-icon-180.png",
+  ]) {
+    await access(new URL(`../public/${icon}`, import.meta.url));
+    await access(new URL(`../dist/client/${icon}`, import.meta.url));
+  }
   await access(new URL("../wrangler.jsonc", import.meta.url));
   await assert.rejects(access(new URL("../.openai/hosting.json", import.meta.url)));
   await assert.rejects(access(new URL("../build/sites-vite-plugin.ts", import.meta.url)));
