@@ -7,9 +7,10 @@ import test from "node:test";
 // Sitewide copy conventions: outward-facing text uses no em or en dashes
 // (use a period, colon or parentheses instead) and no Oxford comma. The
 // Oxford-comma pattern also matches a plain comma before "and"/"or" joining
-// clauses; rephrase those rather than allowlisting them here.
-const EM_OR_EN_DASH = /[—–]/;
-const OXFORD_COMMA = /,\s+(?:and|or)\s/;
+// clauses; rephrase those rather than allowlisting them here. Both patterns
+// match across newlines, since JSX copy often wraps mid-sentence.
+const EM_OR_EN_DASH = /[—–]/g;
+const OXFORD_COMMA = /,\s+(?:and|or)\s/g;
 
 const appDir = fileURLToPath(new URL("../app/", import.meta.url));
 
@@ -26,10 +27,10 @@ async function collectSourceFiles(dir) {
 }
 
 function violations(source, pattern) {
-  return source
-    .split("\n")
-    .map((line, index) => ({ line, number: index + 1 }))
-    .filter(({ line }) => pattern.test(line));
+  return [...source.matchAll(pattern)].map((match) => {
+    const number = source.slice(0, match.index).split("\n").length;
+    return { line: source.split("\n")[number - 1], number };
+  });
 }
 
 test("keeps copy free of em dashes, en dashes and Oxford commas", async () => {
