@@ -64,7 +64,10 @@ Ready-to-paste bios, profile fields, and boilerplate live in `copy.md`.
 
 - `web/` — favicons (16/32), touch icon (180), PWA icons (192/512), and
   `og-1200x630.png` (Open Graph / Twitter card).
-- `x/` — `avatar-400.png` and `banner-1500x500.png` for the X profile.
+- `x/` — `avatar-400.png` and `banner-1500x500.png` for the X profile, plus
+  `system-map-1600x1200.png` (4:3 system map for posts) and its `system-map.html`
+  source. Regenerate with:
+  `google-chrome --headless=new --force-device-scale-factor=2 --window-size=1600,1200 --screenshot=out.png file://.../system-map.html`
 
 Regeneration script: text is outlined from `Georgia_Bold.ttf` via fontTools, composed
 to SVG, rasterized with sharp. See git history of this directory for the pipeline.
