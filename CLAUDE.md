@@ -17,7 +17,7 @@ npm ci                 # install (Node >= 22.13)
 npm run dev            # vinext dev server (Cloudflare Workers runtime via Miniflare)
 npm run build          # production build; the required pre-handoff check
 npm run lint           # eslint (typescript-eslint, react, react-hooks, jsx-a11y, next core-web-vitals)
-npm test               # runs build, then node --test tests/rendered-html.test.mjs
+npm test               # runs build, then node --test "tests/**/*.test.mjs" (all suites)
 ```
 
 Run a single test case (the suite is `node:test`, so filter by test name):
@@ -26,7 +26,7 @@ Run a single test case (the suite is `node:test`, so filter by test name):
 cd apps/web && npm run build && node --test --test-name-pattern "loading skeleton" tests/rendered-html.test.mjs
 ```
 
-`npm test` runs `render()` against the built worker at `dist/server/index.js`, so a build must precede any direct `node --test` invocation.
+`npm test` runs `render()` against the built worker at `dist/server/index.js`, so a build must precede any direct `node --test` invocation. Any new `tests/**/*.test.mjs` file is picked up automatically and becomes a deploy blocker.
 
 OpenSpec workflow (CLI is installed globally):
 
@@ -69,9 +69,9 @@ All archived tasks are complete. New behavior requires a new scoped OpenSpec cha
 
 ### Test suite
 
-`tests/rendered-html.test.mjs` is a `node:test` suite and the de-facto regression guard for the active change. It boots the built worker and asserts rendered output per route (`/`, `/cases`, `/how-it-works`, `/principles`, `/tagged`, `/api/tagged`, the www redirect) plus source-level invariants (`aria-live`, `aria-pressed`, `skip-link`, `aria-current`, `metadataBase`, reduced-motion and focus-visible CSS, and that no vinext-starter residue remains). Build, lint, and all tests currently pass.
+`npm test` runs every `node:test` file under `tests/`. There are two suites. `tests/rendered-html.test.mjs` boots the built worker and asserts rendered output per route (`/`, `/cases`, `/how-it-works`, `/principles`, `/tagged`, `/api/tagged`, the www redirect) plus source-level invariants (`aria-live`, `aria-pressed`, `skip-link`, `aria-current`, `metadataBase`, reduced-motion and focus-visible CSS, and that no vinext-starter residue remains). `tests/copy-style.test.mjs` scans `app/` source for em dashes, en dashes and Oxford commas (the sitewide copy convention from `AGENTS.md`). Build, lint, and all tests currently pass.
 
-Extend this suite when you add behavior; it is what keeps the `public-homepage` and `case-discovery-preview` scenarios honest without a browser harness.
+Extend `rendered-html.test.mjs` when you add behavior; it is what keeps the `public-homepage` and `case-discovery-preview` scenarios honest without a browser harness.
 
 ### Known implementation constraints
 
