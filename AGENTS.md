@@ -48,6 +48,7 @@ Do not edit generated or archived OpenSpec content to disguise implementation dr
 - Do not introduce doxxing, intimate media, private records, illegally obtained material, fabricated evidence, or full copyrighted reproductions.
 - Preserve privacy for voters, reporters, appellants, and sensitive moderation evidence.
 - Canonical revisions and administrative actions must remain auditable when those systems are implemented.
+- Write user-facing copy in a plain human voice. Do not use em dashes, en dashes, or the Oxford comma in copy; use a period, colon, or parentheses instead of a dash. `apps/web/tests/copy-style.test.mjs` enforces this in CI.
 
 ## Frontend expectations
 
