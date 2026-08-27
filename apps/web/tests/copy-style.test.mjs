@@ -9,43 +9,34 @@ import test from "node:test";
 // Oxford-comma pattern also matches a plain comma before "and"/"or" joining
 // clauses; rephrase those rather than allowlisting them here. Both patterns
 // match across newlines, since JSX copy often wraps mid-sentence.
-const EM_OR_EN_DASH = /[—–]/g;
-const OXFORD_COMMA = /,\s+(?:and|or)\s/g;
+const RULES = [
+  [/[—–]/g, "an em or en dash"],
+  [/,\s+(?:and|or)\s/g, "an Oxford comma"],
+];
 
-const appDir = fileURLToPath(new URL("../app/", import.meta.url));
-
-async function collectSourceFiles(dir) {
-  const entries = await readdir(dir, { withFileTypes: true });
-  const files = await Promise.all(
-    entries.map((entry) => {
-      const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) return collectSourceFiles(full);
-      return /\.(tsx?|mdx?)$/.test(entry.name) ? [full] : [];
-    }),
-  );
-  return files.flat();
-}
-
-function violations(source, pattern) {
-  return [...source.matchAll(pattern)].map((match) => {
-    const number = source.slice(0, match.index).split("\n").length;
-    return { line: source.split("\n")[number - 1], number };
-  });
-}
+const webDir = fileURLToPath(new URL("../", import.meta.url));
+const appDir = path.join(webDir, "app");
 
 test("keeps copy free of em dashes, en dashes and Oxford commas", async () => {
-  const files = await collectSourceFiles(appDir);
+  const entries = await readdir(appDir, { recursive: true, withFileTypes: true });
+  const files = entries
+    .filter((entry) => entry.isFile() && /\.(tsx?|mdx?)$/.test(entry.name))
+    .map((entry) => path.join(entry.parentPath, entry.name));
   assert.ok(files.length > 0, "expected app source files to scan");
 
+  const problems = [];
   for (const file of files) {
     const source = await readFile(file, "utf8");
-    const relative = path.relative(path.dirname(appDir), file);
+    const lines = source.split("\n");
+    const relative = path.relative(webDir, file);
 
-    for (const { line, number } of violations(source, EM_OR_EN_DASH)) {
-      assert.fail(`${relative}:${number} uses an em or en dash: ${line.trim()}`);
-    }
-    for (const { line, number } of violations(source, OXFORD_COMMA)) {
-      assert.fail(`${relative}:${number} uses an Oxford comma: ${line.trim()}`);
+    for (const [pattern, label] of RULES) {
+      for (const match of source.matchAll(pattern)) {
+        const number = source.slice(0, match.index).split("\n").length;
+        problems.push(`${relative}:${number} uses ${label}: ${lines[number - 1].trim()}`);
+      }
     }
   }
+
+  assert.deepEqual(problems, [], `copy style violations:\n${problems.join("\n")}`);
 });
