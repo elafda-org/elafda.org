@@ -11,6 +11,15 @@
     "not_found_handling": "none",
     "binding": "ASSETS"
   },
+  // The bot Worker's namespace (apps/bot/wrangler.jsonc). The web Worker only
+  // lists `tagged:` keys from it to serve /api/tagged; the bot stays the sole
+  // writer and keeps no HTTP surface of its own.
+  "kv_namespaces": [
+    {
+      "binding": "BOT_STATE",
+      "id": "7ce70e7ccc8c40fbaa8e56c7f3c1a97e"
+    }
+  ],
   "env": {
     "production": {
       "name": "elafda-web",
@@ -24,6 +33,13 @@
         {
           "pattern": "www.elafda.org",
           "custom_domain": true
+        }
+      ],
+      // kv_namespaces is per-environment in Wrangler and does not inherit.
+      "kv_namespaces": [
+        {
+          "binding": "BOT_STATE",
+          "id": "7ce70e7ccc8c40fbaa8e56c7f3c1a97e"
         }
       ]
     }

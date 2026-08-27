@@ -54,6 +54,15 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
+        {/* Runs before first paint of the page content: re-applies a stored
+            explicit theme choice so a dark-theme visitor never sees a light
+            flash. With nothing stored, the light palette applies. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              'try{var t=localStorage.getItem("elafda-theme");if(t==="dark"||t==="light")document.documentElement.dataset.theme=t}catch(e){}',
+          }}
+        />
         {children}
         {GA_MEASUREMENT_ID ? (
           <>
