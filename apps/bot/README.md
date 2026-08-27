@@ -15,7 +15,9 @@ reason to be reachable over HTTP.
 1. Stops immediately if paused, by configuration or by stored state.
 2. Polls mentions newer than the stored cursor.
 3. Drops its own posts and conversations it has already answered.
-4. Posts one reply per remaining conversation, up to the per-run cap.
+4. Posts one reply per remaining conversation, up to the per-run cap. Each
+   reply's text is drawn at random from the fixed pool in `src/reply.ts`, and
+   a meme image from the curated KV set is attached when one exists.
 5. Advances the cursor only past mentions it finished with.
 
 ## Setup
@@ -45,6 +47,33 @@ npx wrangler kv namespace create BOT_STATE
 Put the returned id into `wrangler.jsonc` as the `BOT_STATE` namespace `id`. The
 committed id belongs to the production Cloudflare account; replace it when
 deploying anywhere else, or the deploy fails with a namespace-not-found error.
+
+#### Meme images (optional)
+
+Replies attach one randomly chosen meme image when the namespace holds any under
+the `meme:` prefix. The images stay out of the repository on purpose: curate
+files into the gitignored `apps/bot/memes/` folder, then sync the folder to KV
+from the repo root:
+
+```bash
+npm run sync:bot-memes            # dry run: shows puts and deletes
+npm run sync:bot-memes -- --live  # applies them
+```
+
+The folder is the source of truth. Every valid file becomes `meme:<filename>`,
+and remote `meme:` keys with no matching local file are deleted, so retiring an
+image is deleting the file and re-syncing. No deploy is involved either way.
+
+- Files must end in `.png`, `.jpg`, `.jpeg`, `.webp` or `.gif`; the sync skips
+  anything else, anything over X's upload caps and warns on images too small to
+  render well.
+- GIFs are uploaded to X as `tweet_gif`, everything else as `tweet_image`.
+- Tea memes fit the reply voice (kermit sipping tea, "the tea" reaction stills).
+  Only keep images you are comfortable posting from the account; classic meme
+  stills are third-party content and taste is the maintainer's call.
+- No `meme:` keys means every reply is text-only. Any failure to fetch or
+  upload the image posts the text alone; a meme problem never costs a mention
+  its reply.
 
 ### 3. Credentials
 

@@ -1,11 +1,24 @@
+import { classifyMention } from "../../../packages/domain/bot/tagged-feed.ts";
 import type { BotStore } from "./store.ts";
 import type { Mention, XClient } from "./x-client.ts";
+
+/** What one reply will post: composed text plus an optional uploaded image. */
+export type ReplyDraft = {
+  text: string;
+  /** An already-uploaded media id to attach, or null for a text-only reply. */
+  mediaId: string | null;
+};
 
 export type RunOptions = {
   client: XClient;
   store: BotStore;
   botUserId: string;
-  replyText: string;
+  /**
+   * Called once per posted reply, so each reply can vary its text and meme.
+   * It runs inside the claim: a throw follows the failed-reply path, which
+   * releases the claim and freezes the cursor for a retry next run.
+   */
+  buildReply: () => Promise<ReplyDraft>;
   maxRepliesPerRun: number;
   /** Poll and select, but report intended replies instead of posting. */
   dryRun: boolean;
@@ -104,6 +117,19 @@ export async function runOnce(options: RunOptions): Promise<RunResult> {
       continue;
     }
 
+    // Every human tag records its target for the public feed, before dedupe
+    // and cap checks: recording is ingestion bookkeeping rather than a reply,
+    // so it also happens in dry-run mode and for already-answered
+    // conversations. Kind and target come from platform reply metadata only;
+    // a reply to the bot records itself, never the bot's tweet.
+    const { kind, targetTweetId } = classifyMention(mention, options.botUserId);
+    await options.store.recordTaggedTweet({
+      tweetId: targetTweetId,
+      kind,
+      mentionId: mention.id,
+      conversationId: mention.conversationId,
+    });
+
     if (
       answeredThisRun.has(mention.conversationId) ||
       (await options.store.hasAnswered(mention.conversationId))
@@ -135,7 +161,12 @@ export async function runOnce(options: RunOptions): Promise<RunResult> {
     selected += 1;
 
     try {
-      await options.client.postReply(options.replyText, mention.id);
+      const draft = await options.buildReply();
+      await options.client.postReply(
+        draft.text,
+        mention.id,
+        draft.mediaId ?? undefined,
+      );
       await options.store.confirmConversation(mention.conversationId);
       replied += 1;
       if (!cursorFrozen) {

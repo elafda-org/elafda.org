@@ -1,7 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { PRELAUNCH_REPLY, REPLY_LIMIT } from "../src/reply.ts";
+import {
+  REPLY_LIMIT,
+  allPrelaunchReplies,
+  composePrelaunchReply,
+} from "../src/reply.ts";
 import { runOnce } from "../src/run.ts";
 
 class MemoryStore {
@@ -9,6 +13,7 @@ class MemoryStore {
     this.cursor = null;
     this.paused = false;
     this.entries = new Map();
+    this.tagged = new Map();
   }
   async getCursor() {
     return this.cursor;
@@ -31,6 +36,13 @@ class MemoryStore {
   async releaseClaim(conversationId) {
     this.entries.delete(conversationId);
   }
+  async recordTaggedTweet(target) {
+    const existing = this.tagged.get(target.tweetId);
+    this.tagged.set(target.tweetId, {
+      ...target,
+      tagCount: (existing?.tagCount ?? 0) + 1,
+    });
+  }
 }
 
 class FakeXClient {
@@ -44,29 +56,43 @@ class FakeXClient {
     this.polls.push({ userId, sinceId });
     return this.mentions;
   }
-  async postReply(text, inReplyToTweetId) {
+  async postReply(text, inReplyToTweetId, mediaId) {
     if (this.failOnTweetId === inReplyToTweetId) {
       throw new Error("x api rejected the reply");
     }
-    this.posts.push({ text, inReplyToTweetId });
+    this.posts.push({ text, inReplyToTweetId, mediaId: mediaId ?? null });
     return { id: `reply-${inReplyToTweetId}` };
+  }
+  async uploadImage() {
+    return { id: "uploaded-media" };
   }
 }
 
 const BOT_ID = "999";
 
-const mention = (id, conversationId, authorId = "555") => ({
+const mention = (
+  id,
+  conversationId,
+  authorId = "555",
+  repliedToId = null,
+  inReplyToUserId = repliedToId === null ? null : "666",
+) => ({
   id,
   conversationId,
   authorId,
+  repliedToId,
+  inReplyToUserId,
 });
+
+// Pinned to the pool's first variant so tests can assert exact posted text.
+const HOLDING_TEXT = composePrelaunchReply(() => 0);
 
 const run = (client, store, overrides = {}) =>
   runOnce({
     client,
     store,
     botUserId: BOT_ID,
-    replyText: PRELAUNCH_REPLY,
+    buildReply: async () => ({ text: HOLDING_TEXT, mediaId: null }),
     maxRepliesPerRun: 10,
     dryRun: false,
     paused: false,
@@ -74,33 +100,107 @@ const run = (client, store, overrides = {}) =>
   });
 
 test("holding reply content", async (t) => {
-  await t.test("posts the fixed pre-launch text", async () => {
+  await t.test("posts a reply drawn from the fixed pool", async () => {
     const client = new FakeXClient([mention("100", "a")]);
-    await run(client, new MemoryStore());
+    await run(client, new MemoryStore(), {
+      buildReply: async () => ({
+        text: composePrelaunchReply(() => 0.42),
+        mediaId: null,
+      }),
+    });
     assert.equal(client.posts.length, 1);
-    assert.equal(client.posts[0].text, PRELAUNCH_REPLY);
+    assert.ok(allPrelaunchReplies().includes(client.posts[0].text));
   });
 
-  await t.test("fits inside the reply limit", () => {
-    assert.ok([...PRELAUNCH_REPLY].length <= REPLY_LIMIT);
-  });
-
-  await t.test("implies no intake", () => {
-    const lowered = PRELAUNCH_REPLY.toLowerCase();
-    for (const term of ["nomination", "case", "review", "filed", "elf-n"]) {
-      assert.ok(!lowered.includes(term), `reply mentions ${term}`);
+  await t.test("every variant fits inside the reply limit", () => {
+    for (const variant of allPrelaunchReplies()) {
+      assert.ok([...variant].length <= REPLY_LIMIT, variant);
     }
   });
 
+  await t.test("every variant implies no intake", () => {
+    for (const variant of allPrelaunchReplies()) {
+      const lowered = variant.toLowerCase();
+      for (const term of ["nomination", "case", "review", "filed", "elf-n"]) {
+        assert.ok(!lowered.includes(term), `"${variant}" mentions ${term}`);
+      }
+    }
+  });
+
+  await t.test("every variant holds and points at the wall", () => {
+    for (const variant of allPrelaunchReplies()) {
+      assert.ok(variant.endsWith("elafda.org/tagged"), variant);
+      assert.match(
+        variant,
+        /soon|pending|not live|not ready|still building|still being built|yet/,
+        variant,
+      );
+    }
+  });
+
+  await t.test("every variant follows the outward copy style", () => {
+    for (const variant of allPrelaunchReplies()) {
+      assert.ok(!variant.includes("—"), `em dash in "${variant}"`);
+      assert.ok(
+        !/, (and|or) /.test(variant),
+        `oxford comma in "${variant}"`,
+      );
+      assert.equal(variant, variant.toLowerCase(), variant);
+    }
+  });
+
+  await t.test("randomization stays inside the pool and varies", () => {
+    const pool = allPrelaunchReplies();
+    const seen = new Set();
+    for (const value of [0, 0.19, 0.42, 0.61, 0.83, 0.999]) {
+      const composed = composePrelaunchReply(() => value);
+      assert.ok(pool.includes(composed), composed);
+      seen.add(composed);
+    }
+    assert.ok(seen.size > 1, "expected different variants across seeds");
+  });
+
   await t.test("draws nothing from the tweet it answers", async () => {
-    // The reply is a constant. Nothing about the mention reaches it, which is
-    // what makes the outgoing text impossible to steer from a thread.
+    // The composer takes only a random source. Nothing about the mention
+    // reaches it, which is what makes the outgoing text impossible to steer
+    // from a thread.
     const client = new FakeXClient([mention("100", "conversation-xyz")]);
     await run(client, new MemoryStore());
     const posted = client.posts[0].text;
-    assert.equal(posted, PRELAUNCH_REPLY);
+    assert.equal(posted, HOLDING_TEXT);
     assert.ok(!posted.includes("100"));
     assert.ok(!posted.includes("conversation-xyz"));
+  });
+});
+
+test("meme attachment", async (t) => {
+  await t.test("passes the drafted media id through to the post", async () => {
+    const client = new FakeXClient([mention("100", "a")]);
+    await run(client, new MemoryStore(), {
+      buildReply: async () => ({ text: HOLDING_TEXT, mediaId: "media-7" }),
+    });
+    assert.equal(client.posts[0].mediaId, "media-7");
+  });
+
+  await t.test("posts text-only when the draft carries no media", async () => {
+    const client = new FakeXClient([mention("100", "a")]);
+    await run(client, new MemoryStore());
+    assert.equal(client.posts[0].mediaId, null);
+  });
+
+  await t.test("a failed draft follows the failed-reply path", async () => {
+    const store = new MemoryStore();
+    const client = new FakeXClient([mention("100", "a")]);
+    const result = await run(client, store, {
+      buildReply: async () => {
+        throw new Error("draft exploded");
+      },
+    });
+    assert.equal(result.failed, 1);
+    assert.equal(client.posts.length, 0);
+    // Claim released and cursor frozen, so the next run retries the mention.
+    assert.equal(store.entries.has("a"), false);
+    assert.equal(store.cursor, null);
   });
 });
 
@@ -265,5 +365,84 @@ test("reply rate limiting", async (t) => {
     // still newer than the cursor and is picked up next run.
     assert.equal(store.cursor, "101");
     assert.equal(store.entries.has("c"), false);
+  });
+});
+
+test("tagged target recording", async (t) => {
+  await t.test("records the replied-to tweet as commentary", async () => {
+    const store = new MemoryStore();
+    await run(new FakeXClient([mention("100", "a", "555", "90")]), store);
+    assert.deepEqual([...store.tagged.keys()], ["90"]);
+    assert.equal(store.tagged.get("90").mentionId, "100");
+    assert.equal(store.tagged.get("90").conversationId, "a");
+    assert.equal(store.tagged.get("90").kind, "commentary");
+  });
+
+  await t.test("records a root mention as an original post", async () => {
+    const store = new MemoryStore();
+    await run(new FakeXClient([mention("100", "100")]), store);
+    assert.deepEqual([...store.tagged.keys()], ["100"]);
+    assert.equal(store.tagged.get("100").kind, "original");
+  });
+
+  await t.test("a reply to the bot records itself, never the bot's tweet", async () => {
+    const store = new MemoryStore();
+    // The human replies to the bot's own reply: repliedToId is the bot's
+    // tweet, so the record must target the mention with kind reply.
+    await run(
+      new FakeXClient([mention("100", "a", "555", "90", BOT_ID)]),
+      store,
+    );
+    assert.deepEqual([...store.tagged.keys()], ["100"]);
+    assert.equal(store.tagged.get("100").kind, "reply");
+  });
+
+  await t.test("records nothing for the bot's own tweets", async () => {
+    const store = new MemoryStore();
+    await run(new FakeXClient([mention("100", "a", BOT_ID, "90")]), store);
+    assert.equal(store.tagged.size, 0);
+  });
+
+  await t.test("collapses re-tags of the same target into one record", async () => {
+    const store = new MemoryStore();
+    const client = new FakeXClient([
+      mention("100", "a", "555", "90"),
+      mention("101", "a", "556", "90"),
+    ]);
+    const result = await run(client, store);
+    assert.deepEqual([...store.tagged.keys()], ["90"]);
+    assert.equal(store.tagged.get("90").tagCount, 2);
+    assert.equal(result.replied, 1);
+  });
+
+  await t.test("still records in an already-answered conversation", async () => {
+    const store = new MemoryStore();
+    store.entries.set("a", "replied");
+    await run(new FakeXClient([mention("100", "a", "555", "90")]), store);
+    assert.deepEqual([...store.tagged.keys()], ["90"]);
+    assert.equal(store.entries.get("a"), "replied");
+  });
+
+  await t.test("records during a dry run without touching the ledger", async () => {
+    const store = new MemoryStore();
+    await run(new FakeXClient([mention("100", "a", "555", "90")]), store, {
+      dryRun: true,
+    });
+    assert.deepEqual([...store.tagged.keys()], ["90"]);
+    assert.equal(store.entries.size, 0);
+    assert.equal(store.cursor, null);
+  });
+
+  await t.test("records targets past the per-run reply cap", async () => {
+    const store = new MemoryStore();
+    const client = new FakeXClient([
+      mention("100", "a", "555", "90"),
+      mention("101", "b", "555", "91"),
+      mention("102", "c", "555", "92"),
+    ]);
+    const result = await run(client, store, { maxRepliesPerRun: 2 });
+    assert.equal(result.replied, 2);
+    // Recording happens per polled mention; the cap only limits replies.
+    assert.deepEqual([...store.tagged.keys()].sort(), ["90", "91", "92"]);
   });
 });

@@ -8,12 +8,22 @@ export type Mention = {
   id: string;
   authorId: string;
   conversationId: string;
+  /** The tweet this mention replies to, when the mention is a reply. */
+  repliedToId: string | null;
+  /** The author of the replied-to tweet, when the mention is a reply. */
+  inReplyToUserId: string | null;
 };
 
 export interface XClient {
   /** Mentions newer than `sinceId`, in whatever order the API returns them. */
   fetchMentions(userId: string, sinceId?: string): Promise<Mention[]>;
-  postReply(text: string, inReplyToTweetId: string): Promise<{ id: string }>;
+  postReply(
+    text: string,
+    inReplyToTweetId: string,
+    mediaId?: string,
+  ): Promise<{ id: string }>;
+  /** Upload one image for later attachment. Returns the media id to attach. */
+  uploadImage(bytes: ArrayBuffer, contentType: string): Promise<{ id: string }>;
 }
 
 const API_ROOT = "https://api.x.com/2";
@@ -66,7 +76,8 @@ export class HttpXClient implements XClient {
     for (let page = 0; page < MAX_MENTION_PAGES; page += 1) {
       const query: Record<string, string> = {
         max_results: String(this.#maxResults),
-        "tweet.fields": "author_id,conversation_id",
+        "tweet.fields":
+          "author_id,conversation_id,referenced_tweets,in_reply_to_user_id",
       };
       if (sinceId) {
         query.since_id = sinceId;
@@ -98,7 +109,13 @@ export class HttpXClient implements XClient {
       }
 
       const payload = (await response.json()) as {
-        data?: { id: string; author_id?: string; conversation_id?: string }[];
+        data?: {
+          id: string;
+          author_id?: string;
+          conversation_id?: string;
+          referenced_tweets?: { type: string; id: string }[];
+          in_reply_to_user_id?: string;
+        }[];
         meta?: { next_token?: string };
       };
 
@@ -108,6 +125,10 @@ export class HttpXClient implements XClient {
           authorId: tweet.author_id ?? "",
           // A tweet with no conversation id is its own conversation root.
           conversationId: tweet.conversation_id ?? tweet.id,
+          repliedToId:
+            tweet.referenced_tweets?.find((ref) => ref.type === "replied_to")
+              ?.id ?? null,
+          inReplyToUserId: tweet.in_reply_to_user_id ?? null,
         });
       }
 
@@ -125,6 +146,7 @@ export class HttpXClient implements XClient {
   async postReply(
     text: string,
     inReplyToTweetId: string,
+    mediaId?: string,
   ): Promise<{ id: string }> {
     const url = `${API_ROOT}/tweets`;
 
@@ -147,6 +169,7 @@ export class HttpXClient implements XClient {
       body: JSON.stringify({
         text,
         reply: { in_reply_to_tweet_id: inReplyToTweetId },
+        ...(mediaId ? { media: { media_ids: [mediaId] } } : {}),
       }),
     });
 
@@ -158,5 +181,51 @@ export class HttpXClient implements XClient {
 
     const payload = (await response.json()) as { data?: { id?: string } };
     return { id: payload.data?.id ?? "" };
+  }
+
+  async uploadImage(
+    bytes: ArrayBuffer,
+    contentType: string,
+  ): Promise<{ id: string }> {
+    const url = `${API_ROOT}/media/upload`;
+
+    // Like the JSON reply body, a multipart body is not part of an OAuth 1.0a
+    // signature base string, so only the OAuth parameters are signed.
+    const authorization = await buildAuthorizationHeader(
+      "POST",
+      url,
+      {},
+      this.#credentials,
+      this.#signingContext(),
+    );
+
+    const form = new FormData();
+    form.append("media", new Blob([bytes], { type: contentType }));
+    // GIFs upload under their own category; posting one as tweet_image loses
+    // the animation or fails outright.
+    form.append(
+      "media_category",
+      contentType === "image/gif" ? "tweet_gif" : "tweet_image",
+    );
+
+    // No explicit content-type header: fetch derives the multipart boundary.
+    const response = await this.#fetch(url, {
+      method: "POST",
+      headers: { authorization },
+      body: form,
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        `media upload failed with ${response.status} ${response.statusText}`,
+      );
+    }
+
+    const payload = (await response.json()) as { data?: { id?: string } };
+    const id = payload.data?.id;
+    if (!id) {
+      throw new Error("media upload returned no media id");
+    }
+    return { id };
   }
 }

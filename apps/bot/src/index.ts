@@ -4,7 +4,7 @@
  * Cron-triggered only. There is no `fetch` handler on purpose: this Worker
  * holds posting credentials, and it has no reason to be reachable over HTTP.
  */
-import { PRELAUNCH_REPLY } from "./reply.ts";
+import { composePrelaunchReply } from "./reply.ts";
 import { runOnce } from "./run.ts";
 import { KvBotStore, type KvNamespace } from "./store.ts";
 import { HttpXClient } from "./x-client.ts";
@@ -66,11 +66,47 @@ export default {
       },
     });
 
+    const store = new KvBotStore(env.BOT_STATE);
+
+    // The curated meme list is fetched once per run; each reply then picks
+    // its own meme and uploads it fresh, since uploaded media ids are
+    // short-lived and the per-run reply cap keeps the upload count small.
+    let memeKeys: Promise<string[]> | null = null;
+    const pickMemeMediaId = async (): Promise<string | null> => {
+      memeKeys ??= store.listMemeKeys();
+      const keys = await memeKeys;
+      if (keys.length === 0) {
+        return null;
+      }
+      const key = keys[Math.floor(Math.random() * keys.length)];
+      const image = key === undefined ? null : await store.getMemeImage(key);
+      if (image === null) {
+        return null;
+      }
+      const uploaded = await client.uploadImage(image.bytes, image.contentType);
+      return uploaded.id;
+    };
+
     const result = await runOnce({
       client,
-      store: new KvBotStore(env.BOT_STATE),
+      store,
       botUserId: requireEnv(env, "X_BOT_USER_ID"),
-      replyText: PRELAUNCH_REPLY,
+      buildReply: async () => {
+        const text = composePrelaunchReply(Math.random);
+        // The meme is garnish. Any failure here posts the text alone rather
+        // than costing the mention its reply.
+        let mediaId: string | null = null;
+        try {
+          mediaId = await pickMemeMediaId();
+        } catch (error) {
+          console.log(
+            `meme skipped: ${
+              error instanceof Error ? error.message : "unknown error"
+            }`,
+          );
+        }
+        return { text, mediaId };
+      },
       maxRepliesPerRun: readMaxReplies(env),
       dryRun: env.BOT_REPLY_MODE !== "live",
       paused: env.BOT_PAUSED === "true",

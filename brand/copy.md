@@ -74,25 +74,31 @@ tag, never the claim in the thread. Lowercase and casual is the point here: the
 formal register belongs to the record, not to replies.
 
 **This is now automated.** `apps/bot` posts one of these on a schedule, once per
-conversation. The live text is set in `apps/bot/src/reply.ts` and is currently:
+conversation. Each reply is picked at random from a fixed pool in
+`apps/bot/src/reply.ts`: a few standard replies, each in a couple of small
+wordings, always ending in the tagged wall link `elafda.org/tagged` (the tag is
+recorded there in the same run, so the link is honest). Editing the lists below
+does not change what the bot posts. Change the pool in `reply.ts` and redeploy.
 
-> coming soon. we're building the thing that holds all the tea. elafda.org
+The standard replies (write like a person typing, not like copy):
 
-Editing the options below does not change what the bot posts. Change
-`PRELAUNCH_REPLY` and redeploy.
+> tea received. teapot pending. it's up on the wall though: elafda.org/tagged
+>
+> you brought tea to a construction site. we'll hold it properly soon, till
+> then it's pinned on the wall: elafda.org/tagged
+>
+> not live yet. we're still building the thing that holds the tea. your tag
+> made the wall though: elafda.org/tagged
+>
+> we saw this lol. nowhere to put it properly yet, but it's on the wall:
+> elafda.org/tagged
 
-**Standard:**
+Each has one or two sibling wordings in `reply.ts` that swap a word or a clause
+and nothing else.
 
-> not live yet. we're still building the thing that holds the tea. elafda.org
-
-**Funny:**
-
-> you brought tea to a construction site. teapot's not done yet. screenshot it
-> yourself for now, we'll hold it properly soon. elafda.org
-
-**Funny, shorter:**
-
-> tea received. teapot pending. elafda.org
+A reply may also carry one meme image (kermit-sipping-tea energy), picked at
+random from a curated set the maintainer uploads to the bot's KV namespace under
+`meme:` keys. No set uploaded means text-only replies; see `apps/bot/README.md`.
 
 One reply per conversation, enforced by a KV ledger rather than by hand. No dates,
 and never "on it": nothing is queued yet.

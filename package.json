@@ -16,6 +16,7 @@
     "typecheck:bot": "apps/web/node_modules/.bin/tsc --project apps/bot",
     "verify:bot-credentials": "node --experimental-strip-types apps/bot/scripts/verify-credentials.mjs",
     "preview:bot-mentions": "node --experimental-strip-types apps/bot/scripts/preview-mentions.mjs",
+    "sync:bot-memes": "node --experimental-strip-types apps/bot/scripts/sync-memes.mjs",
     "lint": "npm --prefix apps/web run lint"
   }
 }
