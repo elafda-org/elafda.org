@@ -1,0 +1,22 @@
+{
+  "name": "@elafda/db",
+  "private": true,
+  "type": "module",
+  "description": "Drizzle schema, migrations and database client for eLafda PostgreSQL",
+  "license": "AGPL-3.0-or-later",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "generate": "drizzle-kit generate",
+    "migrate": "drizzle-kit migrate",
+    "smoke": "../../apps/web/node_modules/.bin/wrangler dev --config smoke/wrangler.jsonc"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.44.2",
+    "postgres": "^3.4.5"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.31.1"
+  }
+}

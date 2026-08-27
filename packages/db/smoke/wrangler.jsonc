@@ -1,0 +1,23 @@
+{
+  // Dev-only smoke Worker. Run with `npm run smoke`; never deploy it.
+  "$schema": "../../../apps/web/node_modules/wrangler/config-schema.json",
+  "name": "elafda-db-smoke",
+  "main": "./worker.ts",
+  "compatibility_date": "2026-08-15",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "preview_urls": false,
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      // `npm run smoke -- --remote` exercises the real
+      // Worker-to-Hyperdrive-to-Supabase path.
+      "id": "6c633a504c5a427c92959c38b1284e3b",
+      // Plain `npm run smoke` (local dev) skips Hyperdrive and connects here
+      // instead, which checks the driver and query path against any local
+      // PostgreSQL. Override without editing this file via
+      // WRANGLER_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE.
+      "localConnectionString": "postgres://postgres:postgres@localhost:5432/elafda"
+    }
+  ]
+}

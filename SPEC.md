@@ -381,7 +381,7 @@ Reputation unlocks workflow privileges, not factual authority. Controls include:
 | Web application      | Next.js with TypeScript                             | SSR, share previews and a large contributor ecosystem         |
 | UI                   | Tailwind CSS plus accessible headless primitives    | Fast iteration without a proprietary component dependency     |
 | API                  | Next.js route handlers with a typed service layer   | One codebase for v1, separable later                          |
-| Database             | PostgreSQL                                          | Transactions, relational integrity and strong search baseline |
+| Database             | PostgreSQL, managed on Supabase                     | Transactions, relational integrity and strong search baseline |
 | ORM and migrations   | Drizzle ORM                                         | Explicit SQL-friendly schema and portable migrations          |
 | Authentication       | Auth.js with the X provider                         | X-only member sign-in with self-hostable session logic        |
 | Jobs and rate limits | Redis-compatible service plus worker                | Retries, delayed jobs and distributed limits                  |
@@ -588,14 +588,14 @@ Use `pnpm` workspaces and Turborepo. The bot stays in the monorepo until indepen
 | ------------------------- | --------------------------------------------------------------------- |
 | DNS and edge controls     | Cloudflare                                                            |
 | vinext web and API        | Cloudflare Workers                                                    |
-| PostgreSQL                | Neon pooled PostgreSQL                                                |
+| PostgreSQL                | Supabase managed PostgreSQL in Mumbai, reached through Hyperdrive     |
 | Redis and queues          | Managed Redis-compatible provider                                     |
 | Bot and background worker | Railway, Render, Fly.io or equivalent long-running container platform |
 | Media                     | Private Cloudflare R2 bucket with signed delivery                     |
 | Email                     | Transactional email provider through an adapter                       |
 | Monitoring                | OpenTelemetry collector plus hosted errors, logs and uptime checks    |
 
-Cloudflare Workers host the server-rendered web application and request-driven API workloads behind Cloudflare DNS. A separate continuously running worker remains preferred for queue consumption, bot retries and reconciliation. Neon pooled or HTTP connections should be used for edge concurrency. R2 is accessed through an S3-compatible adapter so self-hosters can substitute MinIO or S3.
+Cloudflare Workers host the server-rendered web application and request-driven API workloads behind Cloudflare DNS. A separate continuously running worker remains preferred for queue consumption, bot retries and reconciliation. Workers reach PostgreSQL only through a Cloudflare Hyperdrive configuration, which holds the connection string and pools connections near the database for edge concurrency; self-hosters can substitute any PostgreSQL because the schema and migrations avoid provider-specific services. R2 is accessed through an S3-compatible adapter so self-hosters can substitute MinIO or S3.
 
 ### Environments
 
@@ -818,7 +818,7 @@ Stored XSS, SSRF through evidence URLs, malicious uploads, IDOR, vote manipulati
 - Display net scores while hiding raw voter identities.
 - Use a founder-appointed interim moderation group with decisions and tenure published.
 - Keep canonical data in PostgreSQL and mirror accepted case records to GitHub daily.
-- Run the web tier on Cloudflare Workers behind Cloudflare DNS, PostgreSQL on Neon, media on private R2 and the background worker on a container host.
+- Run the web tier on Cloudflare Workers behind Cloudflare DNS, PostgreSQL on Supabase, media on private R2 and the background worker on a container host.
 - Treat the X bot as a nomination interface, never an autonomous publisher.
 - Use X as the sole member sign-in provider; keep member OAuth credentials separate from bot credentials.
 
@@ -836,5 +836,6 @@ Stored XSS, SSRF through evidence URLs, malicious uploads, IDOR, vote manipulati
 
 - Cloudflare Workers framework deployment: <https://developers.cloudflare.com/workers/framework-guides/>
 - Cloudflare Workers custom domains: <https://developers.cloudflare.com/workers/configuration/routing/custom-domains/>
-- Neon connection pooling: <https://neon.com/docs/connect/connection-pooling>
+- Supabase database connections: <https://supabase.com/docs/guides/database/connecting-to-postgres>
+- Cloudflare Hyperdrive: <https://developers.cloudflare.com/hyperdrive/>
 - Cloudflare R2 S3 compatibility: <https://developers.cloudflare.com/r2/api/s3/api/>

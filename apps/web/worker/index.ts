@@ -14,6 +14,13 @@ interface Env {
    * binding degrade to an unavailable feed instead of a crash.
    */
   BOT_STATE?: TaggedFeedKvReader;
+  /**
+   * Hyperdrive route to the Supabase PostgreSQL database. Optional for the
+   * same reason as BOT_STATE; no request path uses it yet, and the first
+   * consumer arrives with the readable-archive change via
+   * `packages/db/src/client.ts`.
+   */
+  HYPERDRIVE?: { connectionString: string };
 }
 
 interface ExecutionContext {

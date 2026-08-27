@@ -20,6 +20,23 @@
       "id": "7ce70e7ccc8c40fbaa8e56c7f3c1a97e"
     }
   ],
+  // Database access (adopt-supabase-postgres): Supabase PostgreSQL reached
+  // through Hyperdrive, which holds the connection string. The Worker treats
+  // the binding as optional and degrades without it. Like kv_namespaces,
+  // hyperdrive is per-environment and does not inherit, so the block is
+  // mirrored in env.production below.
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "6c633a504c5a427c92959c38b1284e3b",
+      // Local dev only (mirrors smoke/wrangler.jsonc): wrangler refuses to
+      // start without a stand-in connection string, and nothing queries the
+      // database yet, so any reachable-or-not local PostgreSQL URL works.
+      // Override without editing this file via
+      // WRANGLER_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE.
+      "localConnectionString": "postgres://postgres:postgres@localhost:5432/elafda"
+    }
+  ],
   "env": {
     "production": {
       "name": "elafda-web",
@@ -40,6 +57,12 @@
         {
           "binding": "BOT_STATE",
           "id": "7ce70e7ccc8c40fbaa8e56c7f3c1a97e"
+        }
+      ],
+      "hyperdrive": [
+        {
+          "binding": "HYPERDRIVE",
+          "id": "6c633a504c5a427c92959c38b1284e3b"
         }
       ]
     }
