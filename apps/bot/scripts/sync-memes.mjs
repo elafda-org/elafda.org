@@ -21,9 +21,12 @@ const botDir = fileURLToPath(new URL("..", import.meta.url));
 const memesDir = path.join(botDir, "memes");
 const live = process.argv.includes("--live");
 
-// X caps simple image uploads at 5 MB and GIFs at 15 MB; stay under both.
+// The bot uploads every meme in one simple (non-chunked) POST, which X caps
+// at 5 MB regardless of format. GIFs only get their 15 MB budget through the
+// chunked upload flow the bot does not implement, so the sync must reject
+// what the bot could never attach.
 const MAX_IMAGE_BYTES = 4_500_000;
-const MAX_GIF_BYTES = 14_000_000;
+const MAX_GIF_BYTES = 4_500_000;
 // Below this the still renders visibly soft in the X media card.
 const TINY_BYTES = 30_000;
 

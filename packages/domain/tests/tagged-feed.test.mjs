@@ -5,7 +5,7 @@ import {
   TAGGED_PREFIX,
   classifyMention,
   listTaggedFeedEntries,
-  listTaggedTweetIds,
+  parseFeedEntry,
   parseTaggedRecord,
   serializeTaggedRecord,
   sortTaggedEntries,
@@ -60,13 +60,15 @@ test("tagged key codec", async (t) => {
   });
 });
 
-test("listTaggedTweetIds", async (t) => {
+const entryIds = (entries) => entries.map((entry) => entry.id);
+
+test("listTaggedFeedEntries ordering", async (t) => {
   await t.test("returns ids newest first regardless of insertion order", async () => {
     const kv = new FakeKv();
     for (const id of ["42", "1960000000000000000", "5", "300"]) {
       kv.set(taggedKey(id), "{}");
     }
-    assert.deepEqual(await listTaggedTweetIds(kv, 10), [
+    assert.deepEqual(entryIds(await listTaggedFeedEntries(kv, 10)), [
       "1960000000000000000",
       "300",
       "42",
@@ -79,7 +81,7 @@ test("listTaggedTweetIds", async (t) => {
     for (const id of ["1", "2", "3", "4"]) {
       kv.set(taggedKey(id), "{}");
     }
-    assert.deepEqual(await listTaggedTweetIds(kv, 2), ["4", "3"]);
+    assert.deepEqual(entryIds(await listTaggedFeedEntries(kv, 2)), ["4", "3"]);
   });
 
   await t.test("ignores keys outside the tagged prefix", async () => {
@@ -87,7 +89,7 @@ test("listTaggedTweetIds", async (t) => {
     kv.set(taggedKey("7"), "{}");
     kv.set("replied:99", "replied");
     kv.set("mentions:cursor", "42");
-    assert.deepEqual(await listTaggedTweetIds(kv, 10), ["7"]);
+    assert.deepEqual(entryIds(await listTaggedFeedEntries(kv, 10)), ["7"]);
   });
 });
 
@@ -174,6 +176,51 @@ test("upsertTaggedRecord", async (t) => {
       mentionId: "104",
     });
     assert.equal(record.kind, "commentary");
+  });
+
+  await t.test("re-polled mention is declined by reference, counted once", () => {
+    // Frozen cursors, per-run caps and dry runs re-poll mentions the record
+    // has already counted; the fold must hand back the same object so the
+    // writer can skip the put and the count cannot inflate.
+    const existing = upsertTaggedRecord(null, first);
+    assert.equal(upsertTaggedRecord(existing, first), existing);
+    assert.equal(
+      upsertTaggedRecord(existing, { ...first, mentionId: "99" }),
+      existing,
+    );
+  });
+
+  await t.test("mention comparison is numeric, not string order", () => {
+    const existing = upsertTaggedRecord(null, first);
+    const record = upsertTaggedRecord(existing, { ...first, mentionId: "1000" });
+    assert.equal(record.tagCount, 2);
+  });
+});
+
+test("parseFeedEntry", async (t) => {
+  await t.test("accepts a well-formed wire entry", () => {
+    const entry = {
+      id: "90",
+      kind: "original",
+      tagCount: 3,
+      taggedAt: "2026-08-27T10:00:00.000Z",
+    };
+    assert.deepEqual(parseFeedEntry(entry), entry);
+  });
+
+  await t.test("defaults unknown kinds and counts like parseTaggedRecord", () => {
+    assert.deepEqual(parseFeedEntry({ id: "90", kind: "mystery", tagCount: 0 }), {
+      id: "90",
+      kind: "commentary",
+      tagCount: 1,
+      taggedAt: null,
+    });
+  });
+
+  await t.test("rejects entries without a numeric string id", () => {
+    for (const raw of [null, "90", {}, { id: 90 }, { id: "abc" }]) {
+      assert.equal(parseFeedEntry(raw), null);
+    }
   });
 });
 

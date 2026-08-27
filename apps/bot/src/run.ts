@@ -123,12 +123,26 @@ export async function runOnce(options: RunOptions): Promise<RunResult> {
     // conversations. Kind and target come from platform reply metadata only;
     // a reply to the bot records itself, never the bot's tweet.
     const { kind, targetTweetId } = classifyMention(mention, options.botUserId);
-    await options.store.recordTaggedTweet({
-      tweetId: targetTweetId,
-      kind,
-      mentionId: mention.id,
-      conversationId: mention.conversationId,
-    });
+    try {
+      await options.store.recordTaggedTweet({
+        tweetId: targetTweetId,
+        kind,
+        mentionId: mention.id,
+        conversationId: mention.conversationId,
+      });
+    } catch (error) {
+      // Contain a store failure to this mention, like a failed reply: freeze
+      // the cursor so the mention is re-polled and re-recorded next run, and
+      // skip its reply until the record backing the reply's wall link exists.
+      failed += 1;
+      cursorFrozen = true;
+      log(
+        `tag record failed for mention ${mention.id}: ${
+          error instanceof Error ? error.message : "unknown error"
+        }`,
+      );
+      continue;
+    }
 
     if (
       answeredThisRun.has(mention.conversationId) ||

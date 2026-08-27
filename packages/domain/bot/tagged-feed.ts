@@ -99,10 +99,18 @@ export type TaggedRecordInput = {
   taggedAt: string;
 };
 
+/** Zero-pad for lexicographic comparison of 64-bit snowflake id strings. */
+const paddedId = (id: string): string => id.padStart(TAGGED_ID_WIDTH, "0");
+
 /**
  * Fold one recording mention into the target's record. Pure, so writer and
  * tests agree: a re-tag increments the count, refreshes the latest-mention
  * metadata, and keeps the strongest kind seen for the target.
+ *
+ * Returns `existing` unchanged (same reference, so writers can skip the put)
+ * when the mention is not newer than the record's latest. Runs process
+ * mentions oldest first, so a frozen cursor, a per-run cap, or dry-run mode
+ * re-polling the same mentions must not count them again.
  */
 export function upsertTaggedRecord(
   existing: TaggedTweetRecord | null,
@@ -119,6 +127,9 @@ export function upsertTaggedRecord(
       recordedAt: input.taggedAt,
       lastTaggedAt: input.taggedAt,
     };
+  }
+  if (paddedId(input.mentionId) <= paddedId(existing.lastMentionId)) {
+    return existing;
   }
   return {
     ...existing,
@@ -186,6 +197,30 @@ export const toFeedEntry = (record: TaggedTweetRecord): TaggedFeedEntry => ({
   taggedAt: record.lastTaggedAt,
 });
 
+/**
+ * Parse one wire entry from the `/api/tagged` payload, with the same
+ * defaulting rules as `parseTaggedRecord`, so the page's client and the
+ * Worker cannot drift on the feed's shape. Null for anything unusable.
+ */
+export function parseFeedEntry(raw: unknown): TaggedFeedEntry | null {
+  if (!raw || typeof raw !== "object") {
+    return null;
+  }
+  const value = raw as Record<string, unknown>;
+  if (typeof value.id !== "string" || !/^\d+$/.test(value.id)) {
+    return null;
+  }
+  return {
+    id: value.id,
+    kind: isKind(value.kind) ? value.kind : "commentary",
+    tagCount:
+      typeof value.tagCount === "number" && value.tagCount >= 1
+        ? Math.floor(value.tagCount)
+        : 1,
+    taggedAt: typeof value.taggedAt === "string" ? value.taggedAt : null,
+  };
+}
+
 export type TaggedSort = "latest" | "mostTagged";
 
 const byIdDescending = (left: TaggedFeedEntry, right: TaggedFeedEntry): number => {
@@ -216,15 +251,6 @@ export interface TaggedFeedKvReader {
     limit?: number;
   }): Promise<{ keys: { name: string }[]; list_complete: boolean }>;
   get(key: string): Promise<string | null>;
-}
-
-/** Newest recorded targets first, at most `limit` of them. */
-export async function listTaggedTweetIds(
-  kv: Pick<TaggedFeedKvReader, "list">,
-  limit: number,
-): Promise<string[]> {
-  const page = await kv.list({ prefix: TAGGED_PREFIX, limit });
-  return page.keys.map((key) => tweetIdFromTaggedKey(key.name));
 }
 
 /**
