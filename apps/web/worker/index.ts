@@ -21,22 +21,54 @@ interface ExecutionContext {
   passThroughOnException(): void;
 }
 
+/**
+ * The Workers runtime's cache surface; not in the DOM lib's CacheStorage,
+ * and absent entirely when the built worker runs under plain Node (the
+ * rendered-html test harness), where the feed just skips edge caching.
+ */
+declare const caches: { default: Cache } | undefined;
+
+const edgeCache = (): Cache | null =>
+  typeof caches === "undefined" ? null : caches.default;
+
 const TAGGED_FEED_LIMIT = 100;
-/** Edge cache is the feed's rate limit; KV sees at most one read per minute. */
 const TAGGED_FEED_CACHE_SECONDS = 60;
 
-async function taggedFeedResponse(env: Env): Promise<Response> {
+async function taggedFeedResponse(
+  request: Request,
+  env: Env,
+  ctx: ExecutionContext,
+): Promise<Response> {
   if (!env.BOT_STATE) {
     return Response.json(
       { error: "tagged feed is not configured" },
       { status: 503 },
     );
   }
+  // A cache-control header alone does not edge-cache a Worker-generated
+  // response; only the Cache API stores it. With the explicit put below, the
+  // KV fan-out (one list plus one get per entry) runs once per cache miss
+  // instead of once per visitor.
+  const cache = edgeCache();
+  const cached = cache && (await cache.match(request.url));
+  if (cached) {
+    return cached;
+  }
   // Entries carry ids, kinds and counters only, never tweet content. Sorting
   // and kind filtering happen client-side on the page, so the response (and
   // its edge cache) stays one shape.
-  const entries = await listTaggedFeedEntries(env.BOT_STATE, TAGGED_FEED_LIMIT);
-  return Response.json(
+  let entries;
+  try {
+    entries = await listTaggedFeedEntries(env.BOT_STATE, TAGGED_FEED_LIMIT);
+  } catch {
+    // A transient KV failure serves the page's designed error state, not a
+    // Cloudflare exception page. Never cached; the next request retries.
+    return Response.json(
+      { error: "tagged feed is unavailable" },
+      { status: 503 },
+    );
+  }
+  const response = Response.json(
     { tweets: entries },
     {
       headers: {
@@ -44,6 +76,10 @@ async function taggedFeedResponse(env: Env): Promise<Response> {
       },
     },
   );
+  if (cache) {
+    ctx.waitUntil(cache.put(request.url, response.clone()));
+  }
+  return response;
 }
 
 const worker = {
@@ -60,7 +96,7 @@ const worker = {
       if (request.method !== "GET") {
         return new Response("Method not allowed", { status: 405 });
       }
-      return taggedFeedResponse(env);
+      return taggedFeedResponse(request, env, ctx);
     }
 
     return handler.fetch(request, env, ctx);

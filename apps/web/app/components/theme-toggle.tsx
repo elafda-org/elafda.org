@@ -1,6 +1,6 @@
 "use client";
 
-export const THEME_STORAGE_KEY = "elafda-theme";
+import { THEME_STORAGE_KEY } from "./theme";
 
 /**
  * Flips between the light and dark palettes. The active theme lives on

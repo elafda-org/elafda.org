@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import "./globals.css";
 
+import { THEME_STORAGE_KEY } from "./components/theme";
+
 // Analytics load only from production builds, so dev servers and local test
 // runs do not pollute the property with internal pageviews.
 const GA_MEASUREMENT_ID =
@@ -59,8 +61,9 @@ export default function RootLayout({
             flash. With nothing stored, the light palette applies. */}
         <script
           dangerouslySetInnerHTML={{
-            __html:
-              'try{var t=localStorage.getItem("elafda-theme");if(t==="dark"||t==="light")document.documentElement.dataset.theme=t}catch(e){}',
+            __html: `try{var t=localStorage.getItem(${JSON.stringify(
+              THEME_STORAGE_KEY,
+            )});if(t==="dark"||t==="light")document.documentElement.dataset.theme=t}catch(e){}`,
           }}
         />
         {children}
