@@ -86,6 +86,10 @@ test("defines both color themes in the stylesheet", async () => {
   // the tokens, so no palette may hide behind the system preference.
   assert.match(styles, /:root\[data-theme="dark"\]/);
   assert.doesNotMatch(styles, /@media \(prefers-color-scheme: dark\)/);
+  // X embed iframes pin a light color-scheme: the dark root otherwise
+  // forces an opaque light canvas behind the transparent iframe, which
+  // shows as a halo around the embed's rounded corners.
+  assert.match(styles, /\.tweet-list iframe \{[^}]*color-scheme: light/);
   // The header switch: a knob that slides and swaps its icon per theme.
   assert.match(styles, /\.theme-knob/);
   assert.match(styles, /:root\[data-theme="dark"\] \.theme-knob \{ transform: translateX/);
