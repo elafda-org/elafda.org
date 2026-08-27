@@ -11,7 +11,7 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
 import { buildAuthorizationHeader } from "../src/oauth1.ts";
-import { PRELAUNCH_REPLY } from "../src/reply.ts";
+import { allPrelaunchReplies } from "../src/reply.ts";
 
 const envPath = fileURLToPath(new URL("../.env", import.meta.url));
 const env = {};
@@ -149,7 +149,9 @@ if (willSkip.length > 0) {
   }
 }
 
-console.log("Each reply would read:");
-console.log(`  "${PRELAUNCH_REPLY}"`);
+console.log("Each reply would read one of (picked at random, meme attached when curated):");
+for (const variant of allPrelaunchReplies()) {
+  console.log(`  "${variant}"`);
+}
 console.log("");
 console.log("Nothing was posted. This script only reads.");

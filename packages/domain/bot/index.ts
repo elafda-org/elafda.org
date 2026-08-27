@@ -16,6 +16,26 @@ export {
   type PhraseLexicon,
 } from "./lexicon.ts";
 export {
+  TAGGED_PREFIX,
+  classifyMention,
+  listTaggedFeedEntries,
+  listTaggedTweetIds,
+  parseTaggedRecord,
+  serializeTaggedRecord,
+  sortTaggedEntries,
+  taggedKey,
+  toFeedEntry,
+  tweetIdFromTaggedKey,
+  upsertTaggedRecord,
+  type MentionReplyContext,
+  type TaggedFeedEntry,
+  type TaggedFeedKvReader,
+  type TaggedRecordInput,
+  type TaggedSort,
+  type TaggedTweetKind,
+  type TaggedTweetRecord,
+} from "./tagged-feed.ts";
+export {
   normalizeMention,
   resolveCommand,
   resolveCommandWithClassifier,

@@ -2,6 +2,9 @@
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "elafda-bot",
   "main": "./src/index.ts",
+  // Coupled to the pinned wrangler version: its bundled workerd must support
+  // this date, or dev and deploy fail with ERR_RUNTIME_FAILURE (issue #8).
+  // Bump wrangler and this date together.
   "compatibility_date": "2026-08-15",
   "workers_dev": false,
   "preview_urls": false,
@@ -27,10 +30,12 @@
       "id": "7ce70e7ccc8c40fbaa8e56c7f3c1a97e"
     }
   ],
-  // Deploys paused and in dry-run mode. Flip these once a run is verified.
+  // Live since the first verified run; production has been replying for
+  // weeks. Emergency pause: set BOT_PAUSED to "true" (or write the bot:paused
+  // KV key) and redeploy.
   "vars": {
-    "BOT_PAUSED": "true",
-    "BOT_REPLY_MODE": "dry-run",
+    "BOT_PAUSED": "false",
+    "BOT_REPLY_MODE": "live",
     "BOT_MAX_REPLIES_PER_RUN": "10"
   }
 }

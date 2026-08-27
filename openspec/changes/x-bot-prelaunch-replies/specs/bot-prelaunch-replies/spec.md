@@ -1,15 +1,34 @@
 ## ADDED Requirements
 
 ### Requirement: Holding reply content
-The bot SHALL post a fixed pre-launch acknowledgement that states nominations are not open, and SHALL NOT restate, summarize, characterize, or quote the content of the tagging tweet or its thread.
+The bot SHALL post a pre-launch acknowledgement drawn at random from a fixed pool of pre-written variants, each of which states that the archive is not open yet and links the public wall of tagged tweets at elafda.org/tagged, and SHALL NOT restate, summarize, characterize, or quote the content of the tagging tweet or its thread.
 
-#### Scenario: Mention receives the holding reply
+#### Scenario: Mention receives a holding reply
 - **WHEN** the bot answers a mention
-- **THEN** the reply is the configured pre-launch text with no content drawn from any tweet
+- **THEN** the reply is one of the pre-written variants with no content drawn from any tweet
 
 #### Scenario: Reply implies no intake
 - **WHEN** the bot answers a mention
 - **THEN** the reply does not reference a nomination, a case, a review link, or a filing
+
+#### Scenario: Variation is presentation only
+- **WHEN** any variant in the pool is selected
+- **THEN** it satisfies every content rule above, so randomization never changes what the reply commits to
+
+### Requirement: Meme attachment
+The bot SHALL attach at most one image per reply, chosen at random from a maintainer-curated set held in operational state rather than in the repository, SHALL post the text alone when the set is empty or the image cannot be fetched or uploaded, and SHALL NOT attach media drawn from the tagging tweet or its thread.
+
+#### Scenario: A curated image is available
+- **WHEN** the bot answers a mention and the curated set holds at least one image
+- **THEN** the reply carries one randomly chosen image from the set
+
+#### Scenario: No curated image is available
+- **WHEN** the curated set is empty
+- **THEN** the bot posts the text-only holding reply rather than skipping the mention
+
+#### Scenario: The image upload fails
+- **WHEN** fetching or uploading the chosen image fails
+- **THEN** the bot posts the text-only holding reply and the mention is not counted as failed
 
 ### Requirement: Reply once per conversation
 The bot SHALL post at most one holding reply per conversation, and SHALL record a conversation as answered before attempting to post rather than after.

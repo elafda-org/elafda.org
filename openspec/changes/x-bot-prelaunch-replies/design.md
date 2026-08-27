@@ -36,9 +36,15 @@ The ledger entry is written before the X API call. If the post then fails, the c
 
 For a bot whose §25 acceptance criterion is idempotent writes, a missed reply is the correct failure. The claim carries a short TTL so a genuinely failed post is retried on a later run, while a successful one is upgraded to a long-lived entry.
 
-### One reply, no interpretation
+### One pool, no interpretation
 
-Every mention gets the same text. There is no classification, no thread reading, and no per-intent variation. The reply is a fixed string with no interpolation from tweet content, which removes the injection surface entirely: nothing a tagging user writes can reach the outgoing reply.
+Every mention gets a reply from the same fixed pool. There is no classification, no thread reading, and no per-intent variation. The pool is a few standard replies, each pre-written in a handful of small wordings so repeats don't read copy-pasted, with no interpolation from tweet content, which removes the injection surface entirely: nothing a tagging user writes can reach the outgoing reply. Randomization only picks among strings that all say the same thing.
+
+### Memes from KV, not from the repo
+
+The meme attached to a reply comes from the bot's own KV namespace under `meme:<filename>` keys, uploaded by the maintainer with `wrangler kv key put --path`. Three reasons: the images are third-party meme stills that should not be committed into an AGPL repository, rotation of the set must not require a deploy, and an empty set has an obvious meaning (text-only replies) rather than a build failure.
+
+Each posted reply uploads its chosen image through `POST /2/media/upload` (multipart, OAuth 1.0a; the body stays outside the signature base string exactly like the JSON reply body) and attaches the returned media id. Uploaded ids are short-lived and the per-run cap is small, so uploading per reply is simpler and safer than caching ids across replies. Any failure along the meme path posts the text alone; the meme is garnish and must never cost a mention its reply.
 
 ## Risks
 

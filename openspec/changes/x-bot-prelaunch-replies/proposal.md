@@ -12,6 +12,8 @@ A holding reply closes that gap without touching the canonical record. It acknow
 - Reply at most once per conversation, and cap replies per run so a burst of tags cannot become a reply storm.
 - Ship an emergency pause that takes effect without a deployment, and a dry-run mode that logs intended replies instead of posting them.
 - Acknowledge the tag only. The reply never restates, summarizes, or characterizes the claim in the thread.
+- Draw each reply at random from a fixed pool of pre-written tea-themed variants, so repeated replies read human without opening any interpolation surface.
+- Attach a randomly chosen meme image from a maintainer-curated set stored in KV, uploaded through the X media endpoint per reply. An empty set or a failed upload degrades to the text-only reply, and no image binaries enter the repository.
 
 ## Capabilities
 

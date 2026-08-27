@@ -29,3 +29,6 @@ coverage/
 # Local hosting work directories
 outputs/
 work/
+
+# Curated bot meme stills, uploaded to KV by hand, never committed
+apps/bot/memes/
