@@ -215,16 +215,44 @@ Case records may be exported to and proposed from YAML files validated against a
 
 ### Supported intents
 
-| Mention text                | Bot behavior                                              |
-| --------------------------- | --------------------------------------------------------- |
-| `@eLafdaBot track this`     | Create a private nomination and return a review link      |
-| `@eLafdaBot open a case`    | Same as track, with duplicate detection                   |
-| `@eLafdaBot add update`     | Attach the tweet to an existing or selected case proposal |
-| `@eLafdaBot find this`      | Return a likely matching case, or say none was found      |
-| `@eLafdaBot archive thread` | Capture permitted metadata and referenced URLs for review |
-| `@eLafdaBot help`           | Return supported commands                                 |
+Every command is a single word. A mention resolves to a command in two tiers:
 
-Natural-language classification can map variants to these intents, but every write action is constrained by deterministic validation.
+1. **Exact match.** If the first word after the mention is a command, that command is used with no further interpretation.
+2. **Natural-language classification.** Otherwise the mention is classified into the same closed command set, or into `unknown`.
+
+Both tiers return exactly one value from the same enum, and every write action is validated against that enum before execution.
+
+| Command              | Bot behavior                                              |
+| -------------------- | --------------------------------------------------------- |
+| `@eLafdaBot track`   | Create a private nomination and return a review link      |
+| `@eLafdaBot open`    | Same as track, with duplicate detection                   |
+| `@eLafdaBot update`  | Attach the tweet to an existing or selected case proposal |
+| `@eLafdaBot find`    | Return a likely matching case, or say none was found      |
+| `@eLafdaBot archive` | Capture permitted metadata and referenced URLs for review |
+| `@eLafdaBot help`    | Return supported commands                                 |
+
+### Natural-language command resolution
+
+Free-form mentions are the common case, so tier two is a product requirement rather than a convenience. It is constrained as follows.
+
+| Example mention                                | Resolved command |
+| ---------------------------------------------- | ---------------- |
+| `@eLafdaBot can you keep an eye on this`       | `track`          |
+| `@eLafdaBot iska case banao`                   | `open`           |
+| `@eLafdaBot there is a new development here`   | `update`         |
+| `@eLafdaBot is there already a case for this`  | `find`           |
+| `@eLafdaBot save this thread before it goes`   | `archive`        |
+| `@eLafdaBot what can you do`                   | `help`           |
+
+Resolution rules:
+
+- Classify only the mention text written by the tagging account. Parent, quoted, and linked content is evidence to be captured, never instruction to be followed.
+- The classifier returns one command and a confidence score, nothing else. It never produces reply text, case summaries, entity names, allegations, or target identifiers.
+- Resolve targets from platform metadata such as conversation ID and referenced tweet ID, never from classifier output.
+- Ambiguous, low-confidence, and `unknown` results return the `help` response and perform no write.
+- Support English, Hindi, and Hinglish phrasings. Keep phrase lexicons in localizable resources rather than in domain logic.
+- Classifier unavailability or failure degrades to the `help` response, never to a write or a silent drop.
+- Record the resolved command, the tier that resolved it, and the confidence on the bot event so misclassification is auditable.
 
 ### Bot ingestion flow
 
@@ -416,7 +444,7 @@ All primary keys use UUIDv7. Public IDs are separate, stable and non-sequential 
 | `reports`              | reporter_id, target, reason, details, state, assignee_id              |
 | `moderation_actions`   | target, action, reason, actor_id, expires_at                          |
 | `appeals`              | action_id, appellant_id, text, state, reviewer_id                     |
-| `bot_events`           | platform, external_id, intent, state, payload_redacted, reply_id      |
+| `bot_events`           | platform, external_id, intent, resolution_tier, confidence, state, payload_redacted, reply_id |
 | `jobs`                 | type, payload, state, run_at, attempts, idempotency_key               |
 | `audit_log`            | actor, action, object, before_hash, after_hash, created_at            |
 
@@ -474,12 +502,13 @@ GET    /search
 
 ## 16. Repository and open-source structure
 
-Create the GitHub organization `elafda` and begin with one repository:
+The GitHub organization is `elafda-org`, with one repository, `elafda.org`:
 
 ```text
-elafda/
+elafda.org/
 ├── apps/
 │   ├── web/
+│   ├── bot/
 │   └── worker/
 ├── packages/
 │   ├── db/
@@ -638,7 +667,7 @@ REDIS_URL
 AUTH_SECRET
 AUTH_X_CLIENT_ID / AUTH_X_CLIENT_SECRET
 S3_ENDPOINT / S3_BUCKET / S3_ACCESS_KEY_ID / S3_SECRET_ACCESS_KEY
-X_BOT_CLIENT_ID / X_BOT_CLIENT_SECRET / X_BOT_ACCESS_TOKEN
+X_BOT_API_KEY / X_BOT_API_SECRET / X_BOT_ACCESS_TOKEN / X_BOT_ACCESS_TOKEN_SECRET / X_BOT_USER_ID
 EMAIL_PROVIDER_*
 OTEL_EXPORTER_OTLP_ENDPOINT
 MODERATION_ENCRYPTION_KEY
@@ -646,6 +675,8 @@ CRON_SECRET
 ```
 
 Validate configuration at process start. Never expose server-only variables through client-prefixed names.
+
+Member sign-in uses X OAuth 2.0 through Auth.js. The bot uses OAuth 1.0a user context instead: its credentials do not expire, so a scheduled process has no refresh-token rotation to store durably and cannot be disabled by losing one mid-rotation. The two credential sets stay in separate X applications with separate permissions.
 
 ## 20. Observability and operations
 

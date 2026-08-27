@@ -1,0 +1,36 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "elafda-bot",
+  "main": "./src/index.ts",
+  "compatibility_date": "2026-08-15",
+  "workers_dev": false,
+  "preview_urls": false,
+  // Cadence is the main driver of X API read consumption. Lower it freely.
+  "triggers": {
+    "crons": ["*/15 * * * *"]
+  },
+  // Validated by wrangler on local dev and on deploy. A deploy fails, naming
+  // the gaps, rather than shipping a Worker that cannot authenticate.
+  "secrets": {
+    "required": [
+      "X_BOT_API_KEY",
+      "X_BOT_API_SECRET",
+      "X_BOT_ACCESS_TOKEN",
+      "X_BOT_ACCESS_TOKEN_SECRET",
+      "X_BOT_USER_ID"
+    ]
+  },
+  "kv_namespaces": [
+    {
+      "binding": "BOT_STATE",
+      // Created with: wrangler kv namespace create BOT_STATE
+      "id": "7ce70e7ccc8c40fbaa8e56c7f3c1a97e"
+    }
+  ],
+  // Deploys paused and in dry-run mode. Flip these once a run is verified.
+  "vars": {
+    "BOT_PAUSED": "true",
+    "BOT_REPLY_MODE": "dry-run",
+    "BOT_MAX_REPLIES_PER_RUN": "10"
+  }
+}

@@ -16,6 +16,8 @@ coverage/
 .env
 .env.*
 !.env.example
+.dev.vars
+.dev.vars.*
 *.pem
 
 # Logs and editor/OS state
