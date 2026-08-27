@@ -52,7 +52,7 @@ Two layers matter more than the file tree:
 - `worker/index.ts`: Worker entry. Delegates to `vinext/server/app-router-entry`, intercepting `/_vinext/image` for image optimization via the `IMAGES` binding.
 - `vite.config.ts`: composes `vinext()`, the local `sites()` plugin, and `@cloudflare/vite-plugin`. Bindings (`d1`, `r2`) are read from `.openai/hosting.json`; both are currently `null`, so no bindings are simulated locally.
 - `build/sites-vite-plugin.ts`: post-build step that packages Sites hosting metadata with the deployable output.
-- `app/page.tsx`: the entire site. A single `"use client"` component holding the homepage plus a hardcoded `cases` array driving `useMemo`-based text search and topic filtering.
+- `app/`: a paginated public site. `page.tsx` is the server-rendered landing page (hero + closing); `cases/` holds the discovery page whose client `case-explorer.tsx` drives the hardcoded `cases` array, search, and topic filtering; `how-it-works/` and `principles/` are static pages; `tagged/` renders the community-tag feed. `components/site-chrome.tsx` provides the shared skip link, header (with the client `github-stars.tsx` star-count link), signal strip, and footer; pages render `<header>`, `<main id="main-content">`, and `<footer>` as sibling landmarks.
 - `app/layout.tsx`: `<html lang="en">` shell, `./globals.css` import, and the `Metadata` export (title, description, Open Graph, `summary_large_image` Twitter card, `metadataBase` from `APP_URL`).
 - `app/globals.css`: hand-written design system (~230 lines) on top of `@import "tailwindcss"`. Defines every class `page.tsx` uses, plus `focus-visible`, `prefers-reduced-motion`, and a `max-width: 760px` breakpoint. Tailwind utilities are available but the page does not use them; edit this file rather than adding utility soup.
 
@@ -69,14 +69,14 @@ All archived tasks are complete. New behavior requires a new scoped OpenSpec cha
 
 ### Test suite
 
-`tests/rendered-html.test.mjs` is a two-test `node:test` suite and is the de-facto regression guard for the active change. It boots the built worker and asserts rendered output (title, hero copy, preview-state cue, `og.png`) plus source-level invariants (`aria-live`, `aria-pressed`, `skip-link`, `metadataBase`, reduced-motion and focus-visible CSS, and that no vinext-starter residue remains). Build, lint, and both tests currently pass.
+`tests/rendered-html.test.mjs` is a `node:test` suite and the de-facto regression guard for the active change. It boots the built worker and asserts rendered output per route (`/`, `/cases`, `/how-it-works`, `/principles`, `/tagged`, `/api/tagged`, the www redirect) plus source-level invariants (`aria-live`, `aria-pressed`, `skip-link`, `aria-current`, `metadataBase`, reduced-motion and focus-visible CSS, and that no vinext-starter residue remains). Build, lint, and all tests currently pass.
 
 Extend this suite when you add behavior; it is what keeps the `public-homepage` and `case-discovery-preview` scenarios honest without a browser harness.
 
 ### Known implementation constraints
 
-- **Landmark structure.** `<main>` wraps the `<header>`, `<nav>`, and `<footer>` ([app/page.tsx:91-321](apps/web/app/page.tsx#L91-L321)), which conflicts with the `public-homepage` semantic-landmark requirement.
-- **Everything is a client component**, including static marketing sections, which limits the SSR/SEO posture the spec calls for.
+- **Client components are now the exception**: only the case explorer, the tagged feed, and the GitHub star counter run client-side; marketing pages are server components.
+- The header star count is an unauthenticated client-side `api.github.com` request that degrades to a plain GitHub link on failure; tests never depend on it.
 
 ## Repository state
 
