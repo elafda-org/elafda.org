@@ -15,7 +15,7 @@ and the standalone mark.
 | `logo/wordmark-mono.svg` | Single-color contexts (inherits `currentColor`) |
 | `logo/mark.svg` | Square "eL." tile — avatars, app icons |
 | `logo/mark-light.svg` | Square tile on paper with ink border |
-| `logo/favicon.svg` | "e." — small sizes (≤48px) where "eL." stops reading |
+| `logo/favicon.svg` | Round "e." disc — small sizes (≤48px) where "eL." stops reading |
 
 All text is outlined to paths (Georgia Bold, −0.06em tracking), so the SVGs render
 identically everywhere — no font dependency.
@@ -63,14 +63,20 @@ Ready-to-paste bios, profile fields, and boilerplate live in `copy.md`.
 ## Ready-made assets
 
 - `web/` — favicons (16/32), touch icon (180), PWA icons (192/512), and
-  `og-1200x630.png` (Open Graph / Twitter card).
-- `x/` — `avatar-400.png` and `banner-1500x500.png` for the X profile.
+  `og-1600x840.png` (Open Graph / Twitter card, the 40:21 ratio and pixel size
+  that `app/layout.tsx` declares).
+- `x/` — `avatar-400.png` and `banner-1500x500.png` for the X profile, plus
+  `system-map-1600x1200.png` (4:3 system map for posts) and its `system-map.html`
+  source. Regenerate with:
+  `google-chrome --headless=new --force-device-scale-factor=2 --window-size=1600,1200 --screenshot=out.png file://.../system-map.html`
 
 Regeneration script: text is outlined from `Georgia_Bold.ttf` via fontTools, composed
 to SVG, rasterized with sharp. See git history of this directory for the pipeline.
 
-## Wiring into the app (not done here)
+## Wiring into the app
 
-Replacing `apps/web/public/og.png` (currently a 2.4MB screenshot) with
-`web/og-1200x630.png` and adding the favicons to `apps/web/public/` + `metadata.icons`
-in `app/layout.tsx` touches the shipped site — scope it as a small OpenSpec change.
+Shipped via the `wire-brand-web-assets` OpenSpec change: `apps/web/public/og.png` is
+`web/og-1600x840.png`, and `favicon.svg` (from `logo/`), `favicon-16.png`,
+`favicon-32.png`, and `apple-touch-icon-180.png` live in `apps/web/public/` and are
+declared through `metadata.icons` in `app/layout.tsx`. If these assets are
+regenerated, re-copy them into `apps/web/public/`.

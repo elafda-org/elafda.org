@@ -10,6 +10,7 @@ record vocabulary distinct. Casing is always **eLafda**.
 | --- | --- |
 | Display name | `eLafda.` — the full stop is part of the name |
 | Handle | `@elafda` (fallbacks: `@elafdadotorg`, `@elafda_org`) |
+| Bot handle | `@eLafdaBot` (separate account, replies to tags) |
 | Bio | Option A below (144/160 chars) |
 | Location | `Indian internet` |
 | Website | `elafda.org` |
@@ -65,6 +66,36 @@ record vocabulary distinct. Casing is always **eLafda**.
 > governed, starting with Indian Tech Twitter while the review and moderation systems
 > take shape. The internet forgets; the receipts shouldn't. eLafda is in early preview
 > at elafda.org.
+
+## Tag replies (pre-launch)
+
+For people tagging `@eLafdaBot` expecting the bot from `SPEC.md` §9. Acknowledge the
+tag, never the claim in the thread. Lowercase and casual is the point here: the
+formal register belongs to the record, not to replies.
+
+**This is now automated.** `apps/bot` posts one of these on a schedule, once per
+conversation. The live text is set in `apps/bot/src/reply.ts` and is currently:
+
+> coming soon. we're building the thing that holds all the tea. elafda.org
+
+Editing the options below does not change what the bot posts. Change
+`PRELAUNCH_REPLY` and redeploy.
+
+**Standard:**
+
+> not live yet. we're still building the thing that holds the tea. elafda.org
+
+**Funny:**
+
+> you brought tea to a construction site. teapot's not done yet. screenshot it
+> yourself for now, we'll hold it properly soon. elafda.org
+
+**Funny, shorter:**
+
+> tea received. teapot pending. elafda.org
+
+One reply per conversation, enforced by a KV ledger rather than by hand. No dates,
+and never "on it": nothing is queued yet.
 
 ## Usage notes
 
