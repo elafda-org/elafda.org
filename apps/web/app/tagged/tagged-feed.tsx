@@ -2,7 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 
+import Link from "next/link";
+
 import {
+  parseFeedEntry,
   sortTaggedEntries,
   type TaggedFeedEntry,
   type TaggedSort,
@@ -20,11 +23,6 @@ const FEED_URL = "/api/tagged";
 const WIDGETS_SCRIPT_ID = "x-widgets-js";
 /** The canonical host per X's own oEmbed output. */
 const WIDGETS_SCRIPT_SRC = "https://platform.x.com/widgets.js";
-
-const KINDS: TaggedTweetKind[] = ["original", "commentary", "reply"];
-
-const isKind = (value: unknown): value is TaggedTweetKind =>
-  KINDS.includes(value as TaggedTweetKind);
 
 /** Visible on each wall entry, so the distinction needs no filter to see. */
 const KIND_LABELS: Record<TaggedTweetKind, string> = {
@@ -58,23 +56,11 @@ declare global {
   }
 }
 
+/** The wire-format rules live in the shared domain codec, never here. */
 function parseEntries(payload: { tweets?: unknown[] }): TaggedFeedEntry[] {
-  const entries: TaggedFeedEntry[] = [];
-  for (const raw of payload.tweets ?? []) {
-    if (!raw || typeof raw !== "object") continue;
-    const tweet = raw as Record<string, unknown>;
-    if (typeof tweet.id !== "string" || !/^\d+$/.test(tweet.id)) continue;
-    entries.push({
-      id: tweet.id,
-      kind: isKind(tweet.kind) ? tweet.kind : "commentary",
-      tagCount:
-        typeof tweet.tagCount === "number" && tweet.tagCount >= 1
-          ? Math.floor(tweet.tagCount)
-          : 1,
-      taggedAt: typeof tweet.taggedAt === "string" ? tweet.taggedAt : null,
-    });
-  }
-  return entries;
+  return (payload.tweets ?? [])
+    .map(parseFeedEntry)
+    .filter((entry): entry is TaggedFeedEntry => entry !== null);
 }
 
 function useTaggedFeed() {
@@ -117,8 +103,10 @@ function useTaggedFeed() {
 }
 
 // X's widgets script upgrades each blockquote into a live embed. It scans
-// the document once when it first loads; whenever the visible set changes
-// (fetch, retry, sort, filter) the already-present script rescans the list.
+// the document once when it first loads; whenever the visible membership
+// changes (fetch, retry, filter) the already-present script rescans the
+// list. Callers key on order-insensitive ids, since a pure reorder (sort
+// toggle) leaves every blockquote already upgraded.
 function useEmbedUpgrade(
   listRef: RefObject<HTMLDivElement | null>,
   visibleIds: string,
@@ -188,7 +176,7 @@ export function TaggedFeed() {
     return sortTaggedEntries(kept, sort);
   }, [entries, filter, sort]);
 
-  useEmbedUpgrade(listRef, visible.map((entry) => entry.id).join(","));
+  useEmbedUpgrade(listRef, visible.map((entry) => entry.id).sort().join(","));
 
   const orderingLabel =
     sort === "latest" ? "latest first" : "most tagged first";
@@ -308,7 +296,7 @@ export function TaggedWallTeaser({ count = 3 }: { count?: number }) {
     [state, count],
   );
 
-  useEmbedUpgrade(listRef, teaser.map((entry) => entry.id).join(","));
+  useEmbedUpgrade(listRef, teaser.map((entry) => entry.id).sort().join(","));
 
   if (teaser.length > 0) {
     return (
@@ -322,15 +310,23 @@ export function TaggedWallTeaser({ count = 3 }: { count?: number }) {
     <p className="wall-note" role="status">
       {state.phase === "loading" && "Loading the latest tags…"}
       {state.phase === "error" && "The tag feed is unavailable right now."}
-      {state.phase === "ready" && (
-        <>
-          Nothing tagged yet. Reply to any tweet on X and tag{" "}
-          <a href="https://x.com/eLafdaBot" rel="noreferrer">
-            @eLafdaBot
-          </a>{" "}
-          to start the wall.
-        </>
-      )}
+      {state.phase === "ready" &&
+        (state.entries.length > 0 ? (
+          // Everything recent is bot-conversation chatter the teaser skips;
+          // claiming the wall is empty here would contradict /tagged.
+          <>
+            The newest tags are replies to the bot. See everything on{" "}
+            <Link href="/tagged">the tagged wall</Link>.
+          </>
+        ) : (
+          <>
+            Nothing tagged yet. Reply to any tweet on X and tag{" "}
+            <a href="https://x.com/eLafdaBot" rel="noreferrer">
+              @eLafdaBot
+            </a>{" "}
+            to start the wall.
+          </>
+        ))}
     </p>
   );
 }
