@@ -19,7 +19,7 @@ export {
   TAGGED_PREFIX,
   classifyMention,
   listTaggedFeedEntries,
-  listTaggedTweetIds,
+  parseFeedEntry,
   parseTaggedRecord,
   serializeTaggedRecord,
   sortTaggedEntries,

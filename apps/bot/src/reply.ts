@@ -16,7 +16,7 @@
  */
 
 /** Each row is one standard reply; its strings are the small wordings. */
-export const REPLY_TEMPLATES = [
+const REPLY_TEMPLATES = [
   [
     "tea received. teapot pending. it's up on the wall though:",
     "tea received. teapot not ready yet. it's up on the wall though:",

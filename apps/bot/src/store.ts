@@ -158,6 +158,11 @@ export class KvBotStore implements BotStore {
       conversationId: target.conversationId,
       taggedAt: new Date().toISOString(),
     });
+    // Same reference means the fold declined an already-counted mention
+    // (re-polled behind a frozen cursor, a cap, or dry-run); skip the write.
+    if (record === existing) {
+      return;
+    }
     await this.#kv.put(key, serializeTaggedRecord(record));
   }
 

@@ -7,6 +7,7 @@ import {
   composePrelaunchReply,
 } from "../src/reply.ts";
 import { runOnce } from "../src/run.ts";
+import { upsertTaggedRecord } from "../../../packages/domain/bot/tagged-feed.ts";
 
 class MemoryStore {
   constructor() {
@@ -37,11 +38,21 @@ class MemoryStore {
     this.entries.delete(conversationId);
   }
   async recordTaggedTweet(target) {
-    const existing = this.tagged.get(target.tweetId);
-    this.tagged.set(target.tweetId, {
-      ...target,
-      tagCount: (existing?.tagCount ?? 0) + 1,
+    if (this.failTaggedRecording) {
+      throw new Error("kv rejected the tagged record");
+    }
+    // Same fold as KvBotStore, so assertions exercise production semantics.
+    const existing = this.tagged.get(target.tweetId) ?? null;
+    const record = upsertTaggedRecord(existing, {
+      targetTweetId: target.tweetId,
+      kind: target.kind,
+      mentionId: target.mentionId,
+      conversationId: target.conversationId,
+      taggedAt: "2026-08-27T00:00:00.000Z",
     });
+    if (record !== existing) {
+      this.tagged.set(target.tweetId, record);
+    }
   }
 }
 
@@ -373,7 +384,8 @@ test("tagged target recording", async (t) => {
     const store = new MemoryStore();
     await run(new FakeXClient([mention("100", "a", "555", "90")]), store);
     assert.deepEqual([...store.tagged.keys()], ["90"]);
-    assert.equal(store.tagged.get("90").mentionId, "100");
+    assert.equal(store.tagged.get("90").firstMentionId, "100");
+    assert.equal(store.tagged.get("90").lastMentionId, "100");
     assert.equal(store.tagged.get("90").conversationId, "a");
     assert.equal(store.tagged.get("90").kind, "commentary");
   });
@@ -444,5 +456,38 @@ test("tagged target recording", async (t) => {
     assert.equal(result.replied, 2);
     // Recording happens per polled mention; the cap only limits replies.
     assert.deepEqual([...store.tagged.keys()].sort(), ["90", "91", "92"]);
+  });
+
+  await t.test("re-polled mentions never inflate the tag count", async () => {
+    // A frozen cursor (cap, failed reply or dry run) re-polls mentions the
+    // record already counted; only genuinely new mentions may count.
+    const store = new MemoryStore();
+    const first = new FakeXClient([mention("100", "a", "555", "90")]);
+    await run(first, store, { dryRun: true });
+    await run(first, store, { dryRun: true });
+    assert.equal(store.tagged.get("90").tagCount, 1);
+
+    const second = new FakeXClient([
+      mention("100", "a", "555", "90"),
+      mention("101", "b", "556", "90"),
+    ]);
+    await run(second, store, { dryRun: true });
+    assert.equal(store.tagged.get("90").tagCount, 2);
+  });
+
+  await t.test("a failed record freezes the cursor and spares the rest", async () => {
+    const store = new MemoryStore();
+    store.failTaggedRecording = true;
+    const client = new FakeXClient([
+      mention("100", "a", "555", "90"),
+      mention("101", "b", "555", "91"),
+    ]);
+    const result = await run(client, store);
+    // Both mentions fail to record, neither gets a reply, and the cursor
+    // stays put so the next run retries them; the run itself completes.
+    assert.equal(result.failed, 2);
+    assert.equal(result.replied, 0);
+    assert.equal(result.cursor, null);
+    assert.deepEqual(client.posts, []);
   });
 });
