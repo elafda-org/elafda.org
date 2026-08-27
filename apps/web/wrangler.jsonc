@@ -2,6 +2,8 @@
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "elafda-web-preview",
   "main": "./worker/index.ts",
+  // Requires a workerd binary at least this new. Bump wrangler and
+  // @cloudflare/vite-plugin together with this date (see issue #2).
   "compatibility_date": "2026-08-15",
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,
