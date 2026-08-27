@@ -29,8 +29,8 @@
   ],
   // Deploys paused and in dry-run mode. Flip these once a run is verified.
   "vars": {
-    "BOT_PAUSED": "false",
-    "BOT_REPLY_MODE": "live",
+    "BOT_PAUSED": "true",
+    "BOT_REPLY_MODE": "dry-run",
     "BOT_MAX_REPLIES_PER_RUN": "10"
   }
 }

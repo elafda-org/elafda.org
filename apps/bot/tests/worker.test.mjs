@@ -127,6 +127,48 @@ test("reply mode defaults to a dry run", async (t) => {
   });
 });
 
+test("mention pagination", async (t) => {
+  await t.test("drains every next_token page before returning", async () => {
+    const { HttpXClient } = await import("../src/x-client.ts");
+
+    const pages = [
+      {
+        data: [{ id: "102", author_id: "1", conversation_id: "c1" }],
+        meta: { next_token: "page-2" },
+      },
+      {
+        data: [{ id: "100", author_id: "2", conversation_id: "c2" }],
+        meta: {},
+      },
+    ];
+    const requests = [];
+    const client = new HttpXClient({
+      credentials: {
+        apiKey: "k",
+        apiSecret: "s",
+        accessToken: "t",
+        accessTokenSecret: "ts",
+      },
+      fetchImpl: async (url) => {
+        requests.push(String(url));
+        return new Response(JSON.stringify(pages[requests.length - 1]), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      },
+    });
+
+    const mentions = await client.fetchMentions("999", "42");
+    assert.equal(requests.length, 2);
+    assert.match(requests[1], /pagination_token=page-2/);
+    assert.match(requests[1], /since_id=42/);
+    assert.deepEqual(
+      mentions.map((m) => m.id),
+      ["102", "100"],
+    );
+  });
+});
+
 test("the x client does not detach global fetch", async (t) => {
   await t.test("resolves globalThis.fetch at call time", async () => {
     // A client that captures `fetch` at construction throws "Illegal

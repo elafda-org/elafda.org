@@ -42,7 +42,9 @@ npm ci
 npx wrangler kv namespace create BOT_STATE
 ```
 
-Put the returned id into `wrangler.jsonc`, replacing `REPLACE_WITH_KV_NAMESPACE_ID`.
+Put the returned id into `wrangler.jsonc` as the `BOT_STATE` namespace `id`. The
+committed id belongs to the production Cloudflare account; replace it when
+deploying anywhere else, or the deploy fails with a namespace-not-found error.
 
 ### 3. Credentials
 
@@ -82,7 +84,7 @@ others so there is one place to look; move it into the `vars` block of
 ### 4. Verify the credentials
 
 The portal does not show the numeric user id, and no offline test can prove that
-X accepts a signature. One command does both:
+X accepts a signature. One command, run from the repository root, does both:
 
 ```bash
 npm run verify:bot-credentials

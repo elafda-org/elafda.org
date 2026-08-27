@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import "./globals.css";
 
-const GA_MEASUREMENT_ID = "G-87L4KMKRE4";
+// Analytics load only from production builds, so dev servers and local test
+// runs do not pollute the property with internal pageviews.
+const GA_MEASUREMENT_ID =
+  process.env.NODE_ENV === "production" ? "G-87L4KMKRE4" : undefined;
 
 const siteUrl = new URL(process.env.APP_URL ?? "https://elafda.org");
 
@@ -52,18 +55,22 @@ export default function RootLayout({
     <html lang="en">
       <body>
         {children}
-        <Script
-          src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
-          strategy="afterInteractive"
-        />
-        <Script id="google-analytics" strategy="afterInteractive">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', '${GA_MEASUREMENT_ID}');
-          `}
-        </Script>
+        {GA_MEASUREMENT_ID ? (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+              strategy="afterInteractive"
+            />
+            <Script id="google-analytics" strategy="afterInteractive">
+              {`
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', '${GA_MEASUREMENT_ID}');
+              `}
+            </Script>
+          </>
+        ) : null}
       </body>
     </html>
   );

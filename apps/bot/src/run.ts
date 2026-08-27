@@ -50,19 +50,29 @@ function ascendingById(left: Mention, right: Mention): number {
 /**
  * One scheduled pass: poll, pick unanswered conversations, reply once each.
  *
- * The cursor advances only past mentions this run actually finished with. When
- * the per-run cap stops the loop, the remainder stay newer than the cursor and
- * are picked up next time rather than being silently skipped.
+ * The cursor advances only past mentions this run actually finished with, and
+ * never past a mention whose reply failed: the first failure freezes it, so the
+ * failed mention (and everything after it) is re-polled next run. When the
+ * per-run cap stops the loop, the remainder stay newer than the cursor and are
+ * picked up next time rather than being silently skipped.
  */
 export async function runOnce(options: RunOptions): Promise<RunResult> {
   const log = options.log ?? (() => {});
 
-  if (options.paused || (await options.store.isPaused())) {
+  if (options.paused) {
     log("run skipped: bot is paused");
     return emptyResult({ paused: true, dryRun: options.dryRun });
   }
 
-  const cursor = await options.store.getCursor();
+  // Independent reads; the speculative cursor fetch is free when paused.
+  const [storedPause, cursor] = await Promise.all([
+    options.store.isPaused(),
+    options.store.getCursor(),
+  ]);
+  if (storedPause) {
+    log("run skipped: bot is paused");
+    return emptyResult({ paused: true, dryRun: options.dryRun });
+  }
   const mentions = await options.client.fetchMentions(
     options.botUserId,
     cursor ?? undefined,
@@ -80,12 +90,17 @@ export async function runOnce(options: RunOptions): Promise<RunResult> {
   let skipped = 0;
   let failed = 0;
   let lastProcessed: string | null = null;
+  // Set by the first failed reply. From then on the cursor stops advancing, so
+  // the failed mention stays newer than the cursor and is re-polled next run.
+  let cursorFrozen = false;
 
   for (const mention of ordered) {
     // The bot's own replies come back as mentions of itself.
     if (mention.authorId === options.botUserId) {
       skipped += 1;
-      lastProcessed = mention.id;
+      if (!cursorFrozen) {
+        lastProcessed = mention.id;
+      }
       continue;
     }
 
@@ -94,7 +109,9 @@ export async function runOnce(options: RunOptions): Promise<RunResult> {
       (await options.store.hasAnswered(mention.conversationId))
     ) {
       skipped += 1;
-      lastProcessed = mention.id;
+      if (!cursorFrozen) {
+        lastProcessed = mention.id;
+      }
       continue;
     }
 
@@ -121,9 +138,16 @@ export async function runOnce(options: RunOptions): Promise<RunResult> {
       await options.client.postReply(options.replyText, mention.id);
       await options.store.confirmConversation(mention.conversationId);
       replied += 1;
-      lastProcessed = mention.id;
+      if (!cursorFrozen) {
+        lastProcessed = mention.id;
+      }
     } catch (error) {
       failed += 1;
+      cursorFrozen = true;
+      // Release rather than letting the claim expire: the TTL matches the cron
+      // interval, so an unexpired claim would make the next run skip the
+      // mention and commit the cursor past it, losing the retry forever.
+      await options.store.releaseClaim(mention.conversationId);
       log(
         `reply failed for conversation ${mention.conversationId}: ${
           error instanceof Error ? error.message : "unknown error"

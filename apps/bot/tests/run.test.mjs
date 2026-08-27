@@ -28,6 +28,9 @@ class MemoryStore {
   async confirmConversation(conversationId) {
     this.entries.set(conversationId, "replied");
   }
+  async releaseClaim(conversationId) {
+    this.entries.delete(conversationId);
+  }
 }
 
 class FakeXClient {
@@ -126,7 +129,7 @@ test("reply once per conversation", async (t) => {
     assert.equal(result.skipped, 2);
   });
 
-  await t.test("claims before posting, so a failure leaves a claim", async () => {
+  await t.test("releases the claim when the post fails", async () => {
     const client = new FakeXClient([mention("100", "a")]);
     client.failOnTweetId = "100";
     const store = new MemoryStore();
@@ -135,9 +138,24 @@ test("reply once per conversation", async (t) => {
     assert.equal(client.posts.length, 0);
     assert.equal(result.failed, 1);
     assert.equal(result.replied, 0);
-    assert.equal(store.entries.get("a"), "claimed");
-    // The cursor did not move past the mention, so a later run sees it again
-    // once the short-lived claim expires.
+    // The claim is released and the cursor did not move past the mention, so
+    // the next run re-polls it and retries immediately, with no TTL race.
+    assert.equal(store.entries.has("a"), false);
+    assert.equal(store.cursor, null);
+  });
+
+  await t.test("never advances the cursor past a failed reply", async () => {
+    const store = new MemoryStore();
+    const client = new FakeXClient([mention("100", "a"), mention("101", "b")]);
+    client.failOnTweetId = "100";
+
+    const result = await run(client, store);
+    // The later mention still gets its reply, but the cursor freezes at the
+    // failure, so mention 100 stays newer than the cursor and is re-polled.
+    assert.equal(result.failed, 1);
+    assert.equal(result.replied, 1);
+    assert.equal(store.entries.get("b"), "replied");
+    assert.equal(store.entries.has("a"), false);
     assert.equal(store.cursor, null);
   });
 

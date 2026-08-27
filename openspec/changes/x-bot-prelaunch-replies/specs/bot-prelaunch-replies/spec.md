@@ -24,10 +24,10 @@ The bot SHALL post at most one holding reply per conversation, and SHALL record 
 
 #### Scenario: Posting fails after the claim
 - **WHEN** the reply request fails after the conversation was claimed
-- **THEN** the claim expires so a later run can retry, and no duplicate reply is posted in the meantime
+- **THEN** the claim is released so the next run retries, and no duplicate reply is posted in the meantime
 
 ### Requirement: Mention polling with a durable cursor
-The bot SHALL poll mentions newer than the stored cursor, SHALL advance the cursor to the newest mention it observed, and SHALL NOT reply to its own posts.
+The bot SHALL poll every page of mentions newer than the stored cursor, SHALL advance the cursor only past mentions it finished with and never past a mention whose reply failed, and SHALL NOT reply to its own posts.
 
 #### Scenario: First run
 - **WHEN** no cursor is stored
@@ -44,6 +44,14 @@ The bot SHALL poll mentions newer than the stored cursor, SHALL advance the curs
 #### Scenario: Poll returns nothing
 - **WHEN** no new mentions exist
 - **THEN** the bot posts nothing and leaves the cursor unchanged
+
+#### Scenario: Mentions span several pages
+- **WHEN** more mentions than one API page arrived since the cursor
+- **THEN** the bot fetches every page before selecting, so no mention is stranded behind an advancing cursor
+
+#### Scenario: A reply fails mid-batch
+- **WHEN** a reply fails and later mentions in the same batch are replied to or skipped
+- **THEN** the cursor does not advance past the failed mention, so the next run re-polls and retries it
 
 ### Requirement: Emergency pause
 The bot SHALL support a pause that stops all posting, SHALL honor a pause stored in operational state without requiring a deployment, and SHALL continue to consume no reply quota while paused.

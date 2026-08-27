@@ -68,6 +68,10 @@ test("ships the finished product surface and social image", async () => {
   assert.doesNotMatch(page, /https:\/\/github\.com\/elafda["/]/);
   assert.match(layout, /metadataBase/);
   assert.match(layout, /summary_large_image/);
+  // Analytics ship gated: present in the source, but only for production
+  // builds, so dev servers and test runs never report pageviews.
+  assert.match(layout, /googletagmanager\.com/);
+  assert.match(layout, /process\.env\.NODE_ENV === "production"/);
   assert.match(styles, /prefers-reduced-motion:\s*reduce/);
   assert.match(styles, /focus-visible/);
   assert.match(styles, /@media \(max-width:\s*760px\)/);

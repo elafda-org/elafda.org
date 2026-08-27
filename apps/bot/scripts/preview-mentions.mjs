@@ -23,6 +23,22 @@ for (const line of (await readFile(envPath, "utf8")).split("\n")) {
   env[t.slice(0, i).trim()] = t.slice(i + 1).trim().replace(/^["']|["']$/g, "");
 }
 
+const REQUIRED = [
+  "X_BOT_API_KEY",
+  "X_BOT_API_SECRET",
+  "X_BOT_ACCESS_TOKEN",
+  "X_BOT_ACCESS_TOKEN_SECRET",
+  "X_BOT_USER_ID",
+];
+const missing = REQUIRED.filter((name) => !env[name]);
+if (missing.length > 0) {
+  console.error(`Missing in .env: ${missing.join(", ")}`);
+  console.error(
+    "Run `npm run verify:bot-credentials` first; it prints X_BOT_USER_ID.",
+  );
+  process.exit(1);
+}
+
 const credentials = {
   apiKey: env.X_BOT_API_KEY,
   apiSecret: env.X_BOT_API_SECRET,

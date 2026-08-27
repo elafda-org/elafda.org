@@ -29,3 +29,10 @@
 - [x] 4.3 Fill `apps/bot/.env` for local runs, and set the `X_BOT_*` secrets with `wrangler secret put` for production
 - [x] 4.4 Run `npm run verify:bot-credentials`, record `X_BOT_USER_ID`, deploy paused, run once in dry-run mode, then unpause
 - [x] 4.5 Seed `mentions:cursor` past the manually answered backlog before going live
+
+## 5. Review Hardening
+
+- [x] 5.1 Restore the paused and dry-run defaults in the committed Wrangler vars so a fresh deploy matches the documented cannot-post-by-accident posture
+- [x] 5.2 Release a failed reply's claim and freeze the cursor at the first failure, so the next run retries instead of losing the mention behind the cursor or a live claim
+- [x] 5.3 Drain mention pagination before selection, so a burst larger than one API page is never stranded behind an advancing cursor
+- [x] 5.4 Validate the preview script's env like the verify script does, and commit a lockfile so `npm ci` works in `apps/bot`

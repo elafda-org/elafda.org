@@ -80,8 +80,9 @@ const response = await fetch(url, {
 const body = await response.text();
 
 if (response.ok) {
-  const id = JSON.parse(body)?.data?.id ?? "";
-  const username = JSON.parse(body)?.data?.username ?? "";
+  const account = JSON.parse(body)?.data ?? {};
+  const id = account.id ?? "";
+  const username = account.username ?? "";
   console.log("Signature accepted.");
   console.log(`Account:         @${username}`);
   console.log(`X_BOT_USER_ID=   ${id}`);

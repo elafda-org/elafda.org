@@ -18,6 +18,9 @@ export interface XClient {
 
 const API_ROOT = "https://api.x.com/2";
 
+/** Runaway guard for mention pagination: 20 pages of 25 is 500 mentions/run. */
+const MAX_MENTION_PAGES = 20;
+
 export type HttpXClientOptions = {
   credentials: Oauth1Credentials;
   /** Injected for reproducible signing in tests. */
@@ -52,46 +55,71 @@ export class HttpXClient implements XClient {
 
   async fetchMentions(userId: string, sinceId?: string): Promise<Mention[]> {
     const url = `${API_ROOT}/users/${encodeURIComponent(userId)}/mentions`;
-    const query: Record<string, string> = {
-      max_results: String(this.#maxResults),
-      "tweet.fields": "author_id,conversation_id",
-    };
-    if (sinceId) {
-      query.since_id = sinceId;
-    }
+    const mentions: Mention[] = [];
+    let paginationToken: string | undefined;
 
-    // Query parameters are part of the signature base string, so they are
-    // signed here and appended to the URL from the same object.
-    const authorization = await buildAuthorizationHeader(
-      "GET",
-      url,
-      query,
-      this.#credentials,
-      this.#signingContext(),
-    );
+    // X pages newest-first. A partial fetch would leave the missing mentions
+    // OLDER than the ones returned, and the caller's cursor would then advance
+    // past them forever, so every page since the cursor is drained. `since_id`
+    // bounds the window; the page cap is a runaway guard far above plausible
+    // volume, and hitting it fails the run so the cursor stays put.
+    for (let page = 0; page < MAX_MENTION_PAGES; page += 1) {
+      const query: Record<string, string> = {
+        max_results: String(this.#maxResults),
+        "tweet.fields": "author_id,conversation_id",
+      };
+      if (sinceId) {
+        query.since_id = sinceId;
+      }
+      if (paginationToken) {
+        query.pagination_token = paginationToken;
+      }
 
-    const requestUrl = `${url}?${new URLSearchParams(query).toString()}`;
-    const response = await this.#fetch(requestUrl, {
-      method: "GET",
-      headers: { authorization },
-    });
-
-    if (!response.ok) {
-      throw new Error(
-        `mention poll failed with ${response.status} ${response.statusText}`,
+      // Query parameters are part of the signature base string, so they are
+      // signed here and appended to the URL from the same object.
+      const authorization = await buildAuthorizationHeader(
+        "GET",
+        url,
+        query,
+        this.#credentials,
+        this.#signingContext(),
       );
+
+      const requestUrl = `${url}?${new URLSearchParams(query).toString()}`;
+      const response = await this.#fetch(requestUrl, {
+        method: "GET",
+        headers: { authorization },
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          `mention poll failed with ${response.status} ${response.statusText}`,
+        );
+      }
+
+      const payload = (await response.json()) as {
+        data?: { id: string; author_id?: string; conversation_id?: string }[];
+        meta?: { next_token?: string };
+      };
+
+      for (const tweet of payload.data ?? []) {
+        mentions.push({
+          id: tweet.id,
+          authorId: tweet.author_id ?? "",
+          // A tweet with no conversation id is its own conversation root.
+          conversationId: tweet.conversation_id ?? tweet.id,
+        });
+      }
+
+      paginationToken = payload.meta?.next_token;
+      if (!paginationToken) {
+        return mentions;
+      }
     }
 
-    const payload = (await response.json()) as {
-      data?: { id: string; author_id?: string; conversation_id?: string }[];
-    };
-
-    return (payload.data ?? []).map((tweet) => ({
-      id: tweet.id,
-      authorId: tweet.author_id ?? "",
-      // A tweet with no conversation id is its own conversation root.
-      conversationId: tweet.conversation_id ?? tweet.id,
-    }));
+    throw new Error(
+      `mention poll exceeded ${MAX_MENTION_PAGES} pages; refusing a partial batch`,
+    );
   }
 
   async postReply(

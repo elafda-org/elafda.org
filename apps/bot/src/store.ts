@@ -15,6 +15,7 @@ export interface KvNamespace {
     value: string,
     options?: { expirationTtl?: number },
   ): Promise<void>;
+  delete(key: string): Promise<void>;
 }
 
 export interface BotStore {
@@ -26,13 +27,21 @@ export interface BotStore {
   claimConversation(conversationId: string): Promise<void>;
   /** Long-lived marker written after a successful post. */
   confirmConversation(conversationId: string): Promise<void>;
+  /**
+   * Remove a claim after a failed post, so the next poll retries immediately
+   * instead of racing the claim TTL against the cron interval.
+   */
+  releaseClaim(conversationId: string): Promise<void>;
 }
 
 const CURSOR_KEY = "mentions:cursor";
 const PAUSE_KEY = "bot:paused";
 const conversationKey = (conversationId: string) => `replied:${conversationId}`;
 
-/** Long enough that a failed post is retried, short enough not to strand a tag. */
+/**
+ * Backstop only: a failed post releases its claim explicitly. The TTL covers a
+ * crash between claiming and posting, where no release ever runs.
+ */
 export const CLAIM_TTL_SECONDS = 900;
 /** Roughly 90 days. A re-tag after that earns a fresh reply. */
 export const CONFIRM_TTL_SECONDS = 7_776_000;
@@ -70,5 +79,9 @@ export class KvBotStore implements BotStore {
     await this.#kv.put(conversationKey(conversationId), "replied", {
       expirationTtl: CONFIRM_TTL_SECONDS,
     });
+  }
+
+  async releaseClaim(conversationId: string): Promise<void> {
+    await this.#kv.delete(conversationKey(conversationId));
   }
 }

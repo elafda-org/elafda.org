@@ -508,6 +508,7 @@ The GitHub organization is `elafda-org`, with one repository, `elafda.org`:
 elafda.org/
 ├── apps/
 │   ├── web/
+│   ├── bot/
 │   └── worker/
 ├── packages/
 │   ├── db/
