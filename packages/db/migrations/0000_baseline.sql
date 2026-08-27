@@ -1,0 +1,2 @@
+-- Baseline: intentionally empty. The migration chain starts here; the first
+-- product tables arrive with the readable-archive change (SPEC.md section 14).
