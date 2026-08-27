@@ -14,7 +14,7 @@
     "preview": "npm run build && vite preview",
     "deploy:preview": "npm run build && WRANGLER_LOG_PATH=.wrangler/wrangler.log wrangler deploy",
     "deploy:production": "npm run build:production && WRANGLER_LOG_PATH=.wrangler/wrangler.log wrangler deploy",
-    "test": "npm run build && node --test tests/rendered-html.test.mjs",
+    "test": "npm run build && node --test \"tests/*.test.mjs\"",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next"
   },
   "dependencies": {

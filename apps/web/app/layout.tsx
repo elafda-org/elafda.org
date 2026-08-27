@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   metadataBase: siteUrl,
   title: "eLafda: The open-source home of internet lafda",
   description:
-    "Follow the conversation, inspect the evidence, and preserve what actually happened across Indian internet culture.",
+    "Follow the conversation, inspect the evidence and keep a record of what actually happened across Indian internet culture.",
   applicationName: "eLafda",
   icons: {
     icon: [

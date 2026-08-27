@@ -19,7 +19,7 @@ const cases: CasePreview[] = [
     id: "ELF-2026-0021",
     title: "Creator collective revenue-share dispute",
     summary:
-      "A public disagreement over campaign terms, payment schedules, and what collaborators say was promised.",
+      "A public disagreement over campaign terms, payment schedules and what collaborators say was promised.",
     topic: "Creator economy",
     status: "Developing",
     sources: 14,
@@ -55,7 +55,7 @@ const cases: CasePreview[] = [
     id: "ELF-2026-0009",
     title: "AI benchmark attribution controversy",
     summary:
-      "Researchers and builders debated dataset provenance, credit, and the language used in a launch announcement.",
+      "Researchers and builders debated dataset provenance, credit and the language used in a launch announcement.",
     topic: "AI",
     status: "Resolved",
     sources: 31,
@@ -127,7 +127,7 @@ export default function Home() {
             <em>Receipts shouldn’t.</em>
           </h1>
           <p className="hero-deck">
-            Follow the conversation, inspect the evidence, and preserve what actually happened without confusing popularity for truth.
+            Follow the conversation, check the evidence and keep a record of what actually happened. Popular is not the same as true.
           </p>
           <div className="hero-actions">
             <a className="button button-dark" href="#archive">
@@ -169,7 +169,7 @@ export default function Home() {
             <p className="eyebrow"><span>02</span> Case discovery</p>
             <h2 id="archive-title">What’s in the record?</h2>
           </div>
-          <p>Browse representative case files from the early archive preview. Full editorial records will follow the review workflow.</p>
+          <p>Browse representative case files from the early archive preview. Full records land once the review workflow is live.</p>
         </div>
 
         <div className="archive-tools">
@@ -246,7 +246,7 @@ export default function Home() {
         <div className="layer-card discussion-layer">
           <span className="layer-index">A</span>
           <p className="layer-label">COMMUNITY DISCUSSION</p>
-          <h3>People react, debate, question, and add context.</h3>
+          <h3>People react, debate, question and add context.</h3>
           <ul>
             <li><span>↗</span> Opinions and analysis</li>
             <li><span>↗</span> Questions and firsthand accounts</li>
@@ -271,13 +271,13 @@ export default function Home() {
         <div className="section-heading compact">
           <div>
             <p className="eyebrow"><span>04</span> Built in public</p>
-            <h2 id="process-title">From “did you see this?”<br />to a durable record.</h2>
+            <h2 id="process-title">From “did you see this?”<br />to a record that lasts.</h2>
           </div>
         </div>
         <ol className="process-list">
-          <li><span>01</span><div><h3>Nominate</h3><p>Share a thread, source, or missing update through the web, or eventually tag the bot.</p></div></li>
-          <li><span>02</span><div><h3>Source</h3><p>Separate fact, allegation, opinion, and satire. Attach lawful primary evidence.</p></div></li>
-          <li><span>03</span><div><h3>Review</h3><p>Contributors check duplicates; archivists review wording, relevance, and support.</p></div></li>
+          <li><span>01</span><div><h3>Nominate</h3><p>Share a thread, source or missing update through the site. Tagging the bot comes later.</p></div></li>
+          <li><span>02</span><div><h3>Source</h3><p>Separate fact, allegation, opinion and satire. Attach lawful primary evidence.</p></div></li>
+          <li><span>03</span><div><h3>Review</h3><p>Contributors check for duplicates, then archivists review wording, relevance and support.</p></div></li>
           <li><span>04</span><div><h3>Preserve</h3><p>Accepted events join a versioned timeline with attribution and a public change trail.</p></div></li>
         </ol>
       </section>
@@ -286,13 +286,13 @@ export default function Home() {
         <div className="principles-title">
           <p className="eyebrow"><span>05</span> Receipts, responsibly</p>
           <h2 id="principles-title">Built for memory.<br /><em>Designed for restraint.</em></h2>
-          <p>Archiving controversy carries real risk. Safety isn’t footer copy; it is part of the product model.</p>
+          <p>Archiving controversy carries real risk. Safety here isn’t a line in the footer. It’s part of how the product works.</p>
         </div>
         <div className="principle-list">
-          <article><span>ATTRIBUTION</span><h3>Allegations stay allegations.</h3><p>We say who alleged what and never turn an investigation, complaint, or arrest into a declaration of guilt.</p></article>
-          <article><span>RIGHT TO REPLY</span><h3>Responses get equal daylight.</h3><p>Material responses, corrections, and contrary evidence appear with comparable prominence.</p></article>
-          <article><span>PRIVACY</span><h3>Public interest has boundaries.</h3><p>No doxxing, intimate media, private records, or attempts to identify private people from images.</p></article>
-          <article><span>TRANSPARENCY</span><h3>Power leaves a paper trail.</h3><p>Canonical edits and moderation decisions are versioned, attributed, and open to appeal.</p></article>
+          <article><span>ATTRIBUTION</span><h3>Allegations stay allegations.</h3><p>We say who alleged what and never turn an investigation, complaint or arrest into a declaration of guilt.</p></article>
+          <article><span>RIGHT TO REPLY</span><h3>Responses get equal daylight.</h3><p>Material responses, corrections and contrary evidence show up just as prominently.</p></article>
+          <article><span>PRIVACY</span><h3>Public interest has boundaries.</h3><p>No doxxing, intimate media, private records or attempts to identify private people from images.</p></article>
+          <article><span>TRANSPARENCY</span><h3>Power leaves a paper trail.</h3><p>Canonical edits and moderation decisions are versioned, attributed and open to appeal.</p></article>
         </div>
       </section>
 
